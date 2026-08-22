@@ -1,0 +1,15 @@
+{
+  "name": "calculator-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test",
+    "serve": "http-server . -p 4173 -c-1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "http-server": "^14.1.1"
+  }
+}
