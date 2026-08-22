@@ -10,6 +10,7 @@ import {
   evaluate,
   clear,
   backspace,
+  deleteHistoryEntry,
 } from "../src/calculator.js";
 
 test("calculate handles addition, subtraction, multiplication, and division", () => {
@@ -77,4 +78,16 @@ test("backspace clears division-by-zero errors without leaving a stale expressio
   assert.equal(state.expression, "");
   assert.equal(state.previousValue, null);
   assert.equal(state.operator, null);
+});
+
+test("deleteHistoryEntry removes a single history item by index", () => {
+  const state = {
+    ...createInitialState(),
+    history: ["4 * 5 = 20", "12 + 3 = 15", "10 - 7 = 3"],
+  };
+
+  const updated = deleteHistoryEntry(state, 1);
+
+  assert.deepEqual(updated.history, ["4 * 5 = 20", "10 - 7 = 3"]);
+  assert.deepEqual(state.history, ["4 * 5 = 20", "12 + 3 = 15", "10 - 7 = 3"]);
 });

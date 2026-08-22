@@ -46,7 +46,7 @@ Use a light workbench layout with a white calculator surface, crisp blue primary
 
 - Display: fixed-height result area with expression, current value, and inline error text.
 - Keypad: stable four-column grid with equal-size buttons to prevent layout shifts.
-- History: compact list of recent completed calculations.
+- History: compact list of recent completed calculations with a small per-entry delete control.
 - Actions: clear and delete controls with clear labels and keyboard focus states.
 
 ## Responsive Behavior

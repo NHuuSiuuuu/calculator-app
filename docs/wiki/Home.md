@@ -54,6 +54,7 @@ npm run test:e2e
 ## Roadmap
 
 - Done: static calculator UI and arithmetic logic
+- Done: delete individual in-memory history entries
 - Done: unit/static tests and Playwright desktop/mobile tests
 - Done: GitHub repository push
 - Done: real-project tracking setup

@@ -155,6 +155,17 @@ export function backspace(state) {
   };
 }
 
+export function deleteHistoryEntry(state, index) {
+  if (!Number.isInteger(index) || index < 0 || index >= state.history.length) {
+    return state;
+  }
+
+  return {
+    ...state,
+    history: state.history.filter((_, entryIndex) => entryIndex !== index),
+  };
+}
+
 export function clear() {
   return createInitialState();
 }

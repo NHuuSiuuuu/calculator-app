@@ -2,6 +2,7 @@ import {
   backspace,
   clear,
   createInitialState,
+  deleteHistoryEntry,
   evaluate,
   inputDecimal,
   inputDigit,
@@ -32,11 +33,24 @@ function render() {
     return;
   }
 
-  for (const entry of state.history) {
+  state.history.forEach((entry, index) => {
     const item = document.createElement("li");
-    item.textContent = entry;
+    const text = document.createElement("span");
+    const deleteButton = document.createElement("button");
+
+    text.className = "history-entry";
+    text.textContent = entry;
+
+    deleteButton.className = "history-delete";
+    deleteButton.type = "button";
+    deleteButton.dataset.historyIndex = String(index);
+    deleteButton.setAttribute("aria-label", `Delete history item ${entry}`);
+    deleteButton.title = "Delete history item";
+    deleteButton.textContent = "x";
+
+    item.append(text, deleteButton);
     historyElement.append(item);
-  }
+  });
 }
 
 function dispatchKey(key) {
@@ -61,7 +75,24 @@ for (const key of keys) {
   key.addEventListener("click", () => dispatchKey(key.dataset.key));
 }
 
+historyElement.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-history-index]");
+
+  if (!button) {
+    return;
+  }
+
+  state = deleteHistoryEntry(state, Number.parseInt(button.dataset.historyIndex, 10));
+  render();
+});
+
 document.addEventListener("keydown", (event) => {
+  const targetButton = event.target instanceof Element ? event.target.closest("button") : null;
+
+  if (targetButton && ["Enter", " "].includes(event.key)) {
+    return;
+  }
+
   const supportedKeys = /^[0-9.]$/.test(event.key)
     || ["+", "-", "*", "/", "Enter", "Backspace", "Escape"].includes(event.key);
 

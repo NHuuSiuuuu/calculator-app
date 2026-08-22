@@ -21,7 +21,10 @@ A small browser calculator for addition, subtraction, multiplication, and divisi
 - Clear and delete controls
 - Keyboard input for numbers, operators, Enter, Backspace, Escape, and decimal point
 - Recent calculation history
+- Delete individual history entries
 - Responsive desktop and mobile layout
+
+History is stored in the app's in-memory JavaScript state for the current browser session. It is not persisted to `localStorage` or a database, so reloading the page clears it.
 
 ## Run
 
