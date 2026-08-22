@@ -4,11 +4,14 @@ A small browser calculator for addition, subtraction, multiplication, and divisi
 
 ## Current Status
 
+- Repository: `https://github.com/NHuuSiuuuu/calculator-app`
 - Repository path: `/home/codexproxy/Codex-ttshuu`
 - Worktree path: `/home/codexproxy/Codex-ttshuu/.worktrees/calculator-app`
-- Branch: `feature/calculator-app`
-- GitHub remote: `https://github.com/NHuuSiuuuu/calculator-app.git`
-- GitHub push status: blocked until GitHub authentication is connected
+- App branch: `feature/calculator-app`
+- Operations branch: `ops/github-pages-tracking`
+- GitHub remote: `git@github.com:NHuuSiuuuu/calculator-app.git`
+- Target live URL: `https://nhuusiuuuu.github.io/calculator-app/`
+- GitHub Pages status: enable manually in repository settings with `main` and `/root`
 
 ## Features
 
@@ -53,6 +56,22 @@ Latest local verification:
 - Desktop screenshot: `.artifacts/screenshots/calculator-desktop.png`
 - Mobile screenshot: `.artifacts/screenshots/calculator-mobile.png`
 
+## Project Operations
+
+GitHub Pages setup:
+
+```text
+Repository Settings -> Pages -> Deploy from branch -> main -> /root
+```
+
+Tracking:
+
+- Bugs and feature requests: GitHub Issues
+- Code review: pull requests using `.github/pull_request_template.md`
+- CI: `.github/workflows/ci.yml`
+- Project status: `docs/PROJECT_STATUS.md`
+- Wiki source: `docs/wiki/Home.md`
+
 ## Project Files
 
 - `DESIGN.md`: visual identity, tokens, and UI rationale
@@ -74,4 +93,4 @@ Latest local verification:
 
 ## Next Step
 
-Connect GitHub authentication, then push `main` and `feature/calculator-app` to the remote repository.
+Merge this operations setup to `main`, enable GitHub Pages from `main` and `/root`, then open `https://nhuusiuuuu.github.io/calculator-app/`.
