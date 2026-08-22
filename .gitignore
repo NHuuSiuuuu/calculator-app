@@ -1,5 +1,7 @@
 .worktrees
 .worktrees/
 node_modules/
+dist/
+apps/web/dist/
 .artifacts/
 test-results/
