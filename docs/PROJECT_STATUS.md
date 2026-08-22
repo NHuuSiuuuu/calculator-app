@@ -6,6 +6,7 @@
 - Repository: `https://github.com/NHuuSiuuuu/calculator-app`
 - Primary branch: `main`
 - Development branch: `feature/calculator-app`
+- Todo branch: `feature/todo-supabase`
 - Operations branch: `ops/github-pages-tracking`
 - Latest app commit before operations setup: `36965352059001e5c3b1ec157d3a06887d4e94d0`
 - Target GitHub Pages URL: `https://nhuusiuuuu.github.io/calculator-app/`
@@ -54,11 +55,13 @@ The CI workflow runs dependency install, unit/static tests, and browser tests.
 
 - Done: static calculator UI and arithmetic logic
 - Done: delete individual in-memory history entries
+- Done: Supabase Todo List implementation branch
 - Done: unit/static tests and Playwright desktop/mobile tests
 - Done: GitHub repository push
 - Done: real-project tracking setup
 - Next: merge operations setup to `main`
 - Next: enable GitHub Pages in repository settings from `main` and `/root`
+- Next: add Supabase project URL and anon key to `config.js`
 - Next: use GitHub Issues/PRs for future changes
 
 ## Working Rules

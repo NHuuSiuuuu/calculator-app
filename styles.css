@@ -30,7 +30,8 @@ body {
 }
 
 button,
-output {
+output,
+input {
   font: inherit;
 }
 
@@ -41,8 +42,40 @@ output {
   place-items: center;
 }
 
-.calculator {
+.workspace {
   width: min(100%, 420px);
+}
+
+.app-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.app-tab {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.app-tab.is-active {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.app-tab:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.app-panel {
   padding: 20px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -50,7 +83,8 @@ output {
   box-shadow: var(--shadow-panel);
 }
 
-.calculator__header {
+.calculator__header,
+.todo-panel__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -60,6 +94,7 @@ output {
 
 .eyebrow,
 .calculator h1,
+.todo-panel h1,
 .history-panel h2 {
   margin: 0;
 }
@@ -72,7 +107,8 @@ output {
   text-transform: uppercase;
 }
 
-.calculator h1 {
+.calculator h1,
+.todo-panel h1 {
   margin-top: 4px;
   font-size: 1.45rem;
   line-height: 1.15;
@@ -268,22 +304,179 @@ output {
   text-align: center;
 }
 
+.todo-form {
+  margin-top: 18px;
+}
+
+.todo-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.todo-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.todo-input,
+.todo-edit-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.todo-input:focus,
+.todo-edit-input:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.todo-add,
+.todo-action {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.todo-add:disabled,
+.todo-action:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.todo-add:focus-visible,
+.todo-action:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.todo-message {
+  min-height: 22px;
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.todo-message.is-error {
+  color: var(--color-danger);
+}
+
+.todo-list {
+  display: grid;
+  gap: 8px;
+  min-height: 48px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+}
+
+.todo-empty {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.todo-check {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+}
+
+.todo-title {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.94rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-title.is-complete {
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+}
+
+.todo-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.todo-action {
+  min-width: 48px;
+  min-height: 34px;
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.78rem;
+}
+
+.todo-action--danger {
+  border-color: rgba(220, 38, 38, 0.28);
+  background: #fff1f2;
+  color: var(--color-danger);
+}
+
+.todo-edit-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
 @media (max-width: 480px) {
   .app-shell {
     align-items: stretch;
     padding: 12px;
   }
 
-  .calculator {
+  .workspace {
     width: 100%;
+  }
+
+  .app-panel {
     padding: 14px;
   }
 
-  .calculator__header {
+  .calculator__header,
+  .todo-panel__header {
     align-items: center;
   }
 
-  .calculator h1 {
+  .calculator h1,
+  .todo-panel h1 {
     font-size: 1.25rem;
   }
 
@@ -298,5 +491,19 @@ output {
 
   .key--equals {
     min-height: 116px;
+  }
+
+  .todo-compose,
+  .todo-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-list li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .todo-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
   }
 }

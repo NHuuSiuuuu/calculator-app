@@ -42,4 +42,3 @@ Supabase docs require RLS on tables exposed through the Data API. This demo uses
 - Static UI tests cover required tab and todo controls.
 - Playwright tests cover the Todo tab with mocked Supabase network responses on desktop and mobile.
 - Existing calculator tests must continue to pass.
-

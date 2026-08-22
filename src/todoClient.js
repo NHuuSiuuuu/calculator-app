@@ -30,7 +30,19 @@ async function parseResponse(response) {
     return null;
   }
 
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { rawText: text };
+  }
+}
+
+function normalizeFirstTodo(todos) {
+  if (!Array.isArray(todos) || !todos[0]) {
+    throw new Error("No todo returned from Supabase.");
+  }
+
+  return normalizeTodo(todos[0]);
 }
 
 export function createTodoClient(config = {}, fetchImpl = globalThis.fetch) {
@@ -67,7 +79,8 @@ export function createTodoClient(config = {}, fetchImpl = globalThis.fetch) {
     const body = await parseResponse(response);
 
     if (!response.ok) {
-      const message = body?.message ?? body?.error ?? `Supabase request failed with status ${response.status}`;
+      const rawText = typeof body?.rawText === "string" ? body.rawText.slice(0, 160) : "";
+      const message = body?.message ?? body?.error ?? (rawText || `Supabase request failed with status ${response.status}`);
       throw new Error(message);
     }
 
@@ -91,7 +104,7 @@ export function createTodoClient(config = {}, fetchImpl = globalThis.fetch) {
         body: JSON.stringify({ title }),
       });
 
-      return normalizeTodo(todos[0]);
+      return normalizeFirstTodo(todos);
     },
 
     async updateTodo(id, changes) {
@@ -103,7 +116,7 @@ export function createTodoClient(config = {}, fetchImpl = globalThis.fetch) {
         body: JSON.stringify(changes),
       });
 
-      return normalizeTodo(todos[0]);
+      return normalizeFirstTodo(todos);
     },
 
     async deleteTodo(id) {
@@ -113,4 +126,3 @@ export function createTodoClient(config = {}, fetchImpl = globalThis.fetch) {
     },
   };
 }
-

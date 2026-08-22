@@ -68,4 +68,3 @@
 - [ ] Add empty `config.js` placeholders.
 - [ ] Document setup, security constraints, and production auth next step.
 - [ ] Run full verification and commit.
-

@@ -93,3 +93,26 @@ test("todo client creates, updates, and deletes todos", async () => {
   assert.equal(calls[2].options.method, "DELETE");
 });
 
+test("todo client reports Supabase status errors with non-JSON bodies", async () => {
+  const client = createTodoClient(config, async () => ({
+    ok: false,
+    status: 500,
+    async text() {
+      return "upstream unavailable";
+    },
+  }));
+
+  await assert.rejects(() => client.listTodos(), /upstream unavailable/);
+});
+
+test("todo client reports empty mutation responses clearly", async () => {
+  const client = createTodoClient(config, async () => ({
+    ok: true,
+    status: 200,
+    async text() {
+      return "[]";
+    },
+  }));
+
+  await assert.rejects(() => client.updateTodo("missing", { completed: true }), /No todo returned from Supabase/);
+});

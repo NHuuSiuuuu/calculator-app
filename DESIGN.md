@@ -36,7 +36,7 @@ tokens:
 
 ## Purpose
 
-The calculator is a focused utility for basic arithmetic: addition, subtraction, multiplication, and division. The interface should feel precise, readable, and fast rather than decorative.
+The app is a focused utility workspace for basic arithmetic and lightweight task tracking. The interface should feel precise, readable, and fast rather than decorative.
 
 ## Visual Direction
 
@@ -44,15 +44,17 @@ Use a light workbench layout with a white calculator surface, crisp blue primary
 
 ## Components
 
+- Tabs: segmented controls switch between Calculator and Todo List without changing the page shell.
 - Display: fixed-height result area with expression, current value, and inline error text.
 - Keypad: stable four-column grid with equal-size buttons to prevent layout shifts.
 - History: compact list of recent completed calculations with a small per-entry delete control.
-- Actions: clear and delete controls with clear labels and keyboard focus states.
+- Todo List: compact Supabase-backed task list with create, complete, edit, delete, loading, empty, setup, and error states.
+- Actions: clear, delete, todo add, edit, save, and delete controls with clear labels and keyboard focus states.
 
 ## Responsive Behavior
 
-The calculator is centered on desktop with a constrained width. On mobile it fills the available width with stable button dimensions and no text overlap.
+The workspace is centered on desktop with a constrained width. On mobile it fills the available width with stable button dimensions and no text overlap.
 
 ## Accessibility
 
-Buttons use semantic HTML, visible focus rings, adequate contrast, and keyboard support for digits, operators, Enter, Backspace, Escape, and decimal input.
+Buttons use semantic HTML, visible focus rings, adequate contrast, and keyboard support. Calculator shortcuts are active only while the Calculator tab is visible, so typing in Todo inputs cannot trigger calculator operations.
