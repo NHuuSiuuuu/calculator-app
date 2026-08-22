@@ -2,7 +2,7 @@
 
 ## Overview
 
-Calculator App is a small static web calculator for addition, subtraction, multiplication, and division.
+Calculator App is a small static productivity app with a calculator and a Supabase-backed todo list.
 
 Repository:
 
@@ -50,16 +50,19 @@ npm run test:e2e
 - Real-project tracking setup is documented in the repo.
 - GitHub Actions CI is configured in `.github/workflows/ci.yml`.
 - GitHub Pages still needs to be enabled from `main` and `/root`.
+- Todo List needs a Supabase project URL and anon key in `config.js` before it can persist data.
 
 ## Roadmap
 
 - Done: static calculator UI and arithmetic logic
 - Done: delete individual in-memory history entries
+- Done: Supabase Todo List implementation branch
 - Done: unit/static tests and Playwright desktop/mobile tests
 - Done: GitHub repository push
 - Done: real-project tracking setup
 - Next: merge operations setup to `main`
 - Next: enable GitHub Pages in repository settings from `main` and `/root`
+- Next: add Supabase config in `config.js`
 - Next: use GitHub Issues and pull requests for future changes
 
 ## GitHub Pages Setup
