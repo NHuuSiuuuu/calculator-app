@@ -4,72 +4,59 @@
 
 - Project: Calculator App
 - Repository: `https://github.com/NHuuSiuuuu/calculator-app`
-- Primary branch: `main`
-- Development branch: `feature/calculator-app`
-- Todo branch: `feature/todo-supabase`
-- Operations branch: `ops/github-pages-tracking`
-- Latest app commit before operations setup: `36965352059001e5c3b1ec157d3a06887d4e94d0`
-- Target GitHub Pages URL: `https://nhuusiuuuu.github.io/calculator-app/`
+- Active branch: `feature/react-auth-migration`
+- App platform: React + Vite
+- Web app path: `apps/web`
+- Database migrations path: `supabase/migrations`
+- Recommended deploy target: Vercel
 
-## Live App
+## Implemented
 
-GitHub Pages setup is manual:
+- Calculator tab ported to React
+- Calculator unit tests preserved
+- Supabase auth helpers for email/password sign up, sign in, session loading, and sign out
+- User-owned Todo repository
+- Supabase migration with `user_id` and RLS scoped to `auth.uid()`
+- Auth-gated Todo UI
+- Desktop/mobile Playwright coverage for calculator and auth-gated todos
+
+## Required Supabase Setup
+
+Run this SQL file in Supabase SQL Editor:
 
 ```text
-Repository Settings -> Pages -> Deploy from branch -> main -> /root
+supabase/migrations/0001_user_owned_todos.sql
 ```
 
-After Pages is enabled, the app should be available at:
+Set these frontend environment variables:
 
 ```text
-https://nhuusiuuuu.github.io/calculator-app/
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
 ```
 
-## Tracking Workflow
+Do not use service role keys or database passwords in frontend code.
 
-- Use GitHub Issues for bugs and feature requests.
-- Use branches for code changes.
-- Use pull requests for review before merging.
-- Use the pull request template checklist for tests, screenshots, docs, and risk notes.
-- Keep `README.md`, `DESIGN.md`, and this status document current.
-
-## Verification
-
-Local commands:
+## Verification Commands
 
 ```bash
 npm ci
 npm test
 npm run test:e2e
+npm run build
 ```
 
-GitHub Actions workflow:
+## Deployment Notes
 
-```text
-.github/workflows/ci.yml
-```
+Use Vercel with:
 
-The CI workflow runs dependency install, unit/static tests, and browser tests.
+- Root Directory: `apps/web`
+- Build Command: `npm run build`
+- Output Directory: `dist`
 
 ## Roadmap
 
-- Done: static calculator UI and arithmetic logic
-- Done: delete individual in-memory history entries
-- Done: Supabase Todo List implementation branch
-- Done: unit/static tests and Playwright desktop/mobile tests
-- Done: GitHub repository push
-- Done: real-project tracking setup
-- Next: merge operations setup to `main`
-- Next: enable GitHub Pages in repository settings from `main` and `/root`
-- Next: add Supabase project URL and anon key to `config.js`
-- Next: use GitHub Issues/PRs for future changes
-
-## Working Rules
-
-- Use Superpowers guidance for coding, debugging, and review tasks.
-- Use git for all change tracking and comparison.
-- Keep changes focused and avoid unrelated refactors.
-- Follow `DESIGN.md` for frontend/UI changes.
-- Verify UI with real browser checks on desktop and mobile when practical.
-- Do not report completion without real verification evidence.
-- Mirror major README/status changes into wiki content when wiki access exists.
+- Next: final review for React/Auth migration
+- Next: push branch and open PR
+- Later: add password reset if needed
+- Later: add server/API only when secret server-side logic is needed
