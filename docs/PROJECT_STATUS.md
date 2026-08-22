@@ -16,7 +16,7 @@
 - Calculator unit tests preserved
 - Supabase auth helpers for email/password sign up, sign in, session loading, and sign out
 - User-owned Todo repository
-- Supabase migration with `user_id` and RLS scoped to `auth.uid()`
+- Supabase migration with `user_id`, existing-table upgrade handling, and RLS scoped to `auth.uid()`
 - Auth-gated Todo UI
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
 
@@ -36,6 +36,8 @@ VITE_SUPABASE_ANON_KEY
 ```
 
 Do not use service role keys or database passwords in frontend code.
+
+If the database already contains todos from the earlier anonymous demo, the migration removes rows without `user_id` before enforcing per-user ownership.
 
 ## Verification Commands
 

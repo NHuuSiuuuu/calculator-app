@@ -2,12 +2,21 @@ create extension if not exists "pgcrypto";
 
 create table if not exists public.todos (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
   title text not null check (char_length(btrim(title)) between 1 and 120),
   completed boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.todos
+add column if not exists user_id uuid references auth.users(id) on delete cascade;
+
+-- Old anonymous demo rows have no reliable owner, so remove them before enforcing ownership.
+delete from public.todos
+where user_id is null;
+
+alter table public.todos
+alter column user_id set not null;
 
 create or replace function public.set_updated_at()
 returns trigger

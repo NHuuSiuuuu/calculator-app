@@ -59,7 +59,7 @@ calculator-app/
 supabase/migrations/0001_user_owned_todos.sql
 ```
 
-This migration creates `public.todos`, adds `user_id`, enables RLS, and scopes access to `auth.uid()`.
+This migration creates or upgrades `public.todos`, adds `user_id`, enables RLS, and scopes access to `auth.uid()`. If the project already has old anonymous demo todos, the migration removes rows without `user_id` before making ownership required.
 
 Only use the anon/publishable key in the frontend. Do not expose service role keys, database passwords, or JWT secrets.
 

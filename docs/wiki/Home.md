@@ -50,6 +50,8 @@ Run:
 supabase/migrations/0001_user_owned_todos.sql
 ```
 
+The migration works for a new project and for the earlier anonymous Todo demo. Anonymous rows without `user_id` are removed before RLS ownership is enforced.
+
 Configure:
 
 ```text
