@@ -32,7 +32,7 @@ test("game engine enemies chase the player and damage on contact", () => {
   assert.ok(next.enemies[0].x < enemy.x);
 });
 
-test("game engine attacks enemies, grants xp, coins, and levels", () => {
+test("game engine only attacks when attack input is pressed", () => {
   const state = createGame({ seed: 3 });
   const enemy = {
     id: "enemy-test",
@@ -44,15 +44,34 @@ test("game engine attacks enemies, grants xp, coins, and levels", () => {
     xpReward: 5,
     coinReward: 2,
   };
-  const next = stepGame({
+  const idle = stepGame({
     ...state,
     enemies: [enemy],
     player: { ...state.player, attackCooldownMs: 0 },
   }, {}, 300);
+  const attacked = stepGame({
+    ...state,
+    enemies: [enemy],
+    player: { ...state.player, attackCooldownMs: 0 },
+  }, { attack: true }, 300);
 
-  assert.equal(next.enemies.length, 0);
-  assert.equal(next.player.coins, 2);
-  assert.ok(next.player.level > state.player.level);
+  assert.equal(idle.enemies.length, 1);
+  assert.equal(attacked.enemies.length, 0);
+  assert.equal(attacked.player.coins, 2);
+  assert.ok(attacked.player.level > state.player.level);
+  assert.equal(attacked.effects.some((effect) => effect.type === "slash"), true);
+});
+
+test("game engine shows a slash effect even when an attack misses", () => {
+  const state = createGame({ seed: 33 });
+  const next = stepGame({
+    ...state,
+    enemies: [],
+    player: { ...state.player, attackCooldownMs: 0 },
+  }, { attack: true }, 120);
+
+  assert.equal(next.effects.some((effect) => effect.type === "slash"), true);
+  assert.ok(next.player.attackCooldownMs > 0);
 });
 
 test("game engine restarts a completed run", () => {

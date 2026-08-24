@@ -10,7 +10,7 @@ Version 1 is a focused survival loop:
 
 - Player moves around a random tile map.
 - Enemies spawn over time and chase the player.
-- Player auto-attacks enemies in range.
+- Player attacks enemies in range when the user presses attack.
 - Player has HP and takes contact damage.
 - Enemies grant XP and coins when defeated.
 - XP increases the player level.
@@ -35,11 +35,13 @@ The user opens the `Game` tab and sees a compact game surface with HUD stats abo
 Desktop controls:
 
 - `WASD` and arrow keys move the player.
+- `Space` attacks nearby enemies.
 - Restart button starts a new run after game over.
 
 Mobile controls:
 
 - Direction buttons below the game surface.
+- Attack button below the game surface.
 - Restart button remains accessible.
 
 ## Game Model

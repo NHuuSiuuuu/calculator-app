@@ -161,7 +161,7 @@ function moveEnemies(enemies, player, map, deltaSeconds) {
   });
 }
 
-function applyCombat(player, enemies, deltaMs) {
+function applyCombat(player, enemies, input, deltaMs) {
   let nextPlayer = {
     ...player,
     attackCooldownMs: Math.max(0, player.attackCooldownMs - deltaMs),
@@ -169,14 +169,20 @@ function applyCombat(player, enemies, deltaMs) {
   let nextEnemies = enemies;
   const effects = [];
 
-  if (nextPlayer.attackCooldownMs === 0 && enemies.length > 0) {
+  if (input.attack && nextPlayer.attackCooldownMs === 0) {
     const target = enemies.find((enemy) => distance(nextPlayer, enemy) <= nextPlayer.attackRange);
+    nextPlayer = { ...nextPlayer, attackCooldownMs: 420 };
+    effects.push({
+      type: "slash",
+      x: target?.x ?? nextPlayer.x,
+      y: target?.y ?? nextPlayer.y,
+      ttlMs: 180,
+    });
+
     if (target) {
-      nextPlayer = { ...nextPlayer, attackCooldownMs: 420 };
       nextEnemies = enemies.map((enemy) => (
         enemy.id === target.id ? { ...enemy, hp: enemy.hp - nextPlayer.attackDamage } : enemy
       ));
-      effects.push({ type: "slash", x: target.x, y: target.y, ttlMs: 160 });
     }
   }
 
@@ -228,7 +234,7 @@ export function stepGame(state, input = {}, deltaMs = 16) {
   const rng = state._rng ?? createRng(state.seed);
   const movedPlayer = movePlayer(state, input, deltaSeconds);
   const movedEnemies = moveEnemies(state.enemies, movedPlayer, state.map, deltaSeconds);
-  const combat = applyCombat(movedPlayer, movedEnemies, safeDeltaMs);
+  const combat = applyCombat(movedPlayer, movedEnemies, input, safeDeltaMs);
   const elapsedMs = state.run.elapsedMs + safeDeltaMs;
   const score = Math.floor(elapsedMs / 100) + combat.player.level * 10 + combat.player.coins * 5;
   let spawnTimerMs = state.run.spawnTimerMs - safeDeltaMs;
@@ -246,9 +252,12 @@ export function stepGame(state, input = {}, deltaMs = 16) {
     _rng: rng,
     player: combat.player,
     enemies,
-    effects: [...combat.effects, ...state.effects]
-      .map((effect) => ({ ...effect, ttlMs: effect.ttlMs - safeDeltaMs }))
-      .filter((effect) => effect.ttlMs > 0),
+    effects: [
+      ...combat.effects,
+      ...state.effects
+        .map((effect) => ({ ...effect, ttlMs: effect.ttlMs - safeDeltaMs }))
+        .filter((effect) => effect.ttlMs > 0),
+    ],
     run: {
       ...state.run,
       elapsedMs,

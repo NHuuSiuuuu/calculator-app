@@ -12,6 +12,7 @@ const INPUT_KEYS = {
   KeyA: "left",
   ArrowRight: "right",
   KeyD: "right",
+  Space: "attack",
 };
 
 function drawGame(canvas, state) {
@@ -62,14 +63,23 @@ function formatPosition(player) {
   return `Position ${player.x.toFixed(2)}, ${player.y.toFixed(2)}`;
 }
 
+function getAttackStatus(game) {
+  if (game.effects.some((effect) => effect.type === "slash")) {
+    return "Slash!";
+  }
+
+  return game.player.attackCooldownMs > 0 ? "Cooldown" : "Ready";
+}
+
 export function GamePanel() {
   const [game, setGame] = useState(() => createGame({ seed: Date.now() }));
   const [stats, setStats] = useState(() => loadGameStats());
   const canvasRef = useRef(null);
-  const inputRef = useRef({ up: false, down: false, left: false, right: false });
+  const inputRef = useRef({ up: false, down: false, left: false, right: false, attack: false });
   const gameRef = useRef(game);
   const lastFrameRef = useRef(0);
   const savedGameOverRef = useRef(false);
+  const attackTimeoutRef = useRef(0);
 
   useEffect(() => {
     gameRef.current = game;
@@ -113,6 +123,7 @@ export function GamePanel() {
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
+      clearTimeout(attackTimeoutRef.current);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
@@ -142,8 +153,16 @@ export function GamePanel() {
     inputRef.current = { ...inputRef.current, [direction]: isPressed };
   }
 
+  function triggerAttack() {
+    clearTimeout(attackTimeoutRef.current);
+    inputRef.current = { ...inputRef.current, attack: true };
+    attackTimeoutRef.current = window.setTimeout(() => {
+      inputRef.current = { ...inputRef.current, attack: false };
+    }, 140);
+  }
+
   function handleRestart() {
-    inputRef.current = { up: false, down: false, left: false, right: false };
+    inputRef.current = { up: false, down: false, left: false, right: false, attack: false };
     savedGameOverRef.current = false;
     lastFrameRef.current = 0;
     setGame(restartGame({ seed: Date.now() }));
@@ -187,6 +206,12 @@ export function GamePanel() {
       <div className="game-footer">
         <span data-testid="player-position">{formatPosition(game.player)}</span>
         <span>{game.enemies.length} enemies</span>
+        <span
+          className={getAttackStatus(game) === "Slash!" ? "game-attack-effect is-active" : "game-attack-effect"}
+          data-testid="attack-effect"
+        >
+          {getAttackStatus(game)}
+        </span>
       </div>
 
       <div className="game-controls" aria-label="Touch controls">
@@ -216,6 +241,13 @@ export function GamePanel() {
           onPointerLeave={() => setTouchDirection("right", false)}
         >
           Right
+        </button>
+        <button
+          className="game-control game-control--attack"
+          type="button"
+          onClick={triggerAttack}
+        >
+          Attack
         </button>
         <button
           className="game-control game-control--down"

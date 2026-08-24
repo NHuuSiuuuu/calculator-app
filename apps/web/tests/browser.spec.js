@@ -64,6 +64,10 @@ test("game tab renders Dungeon Survivor on desktop and mobile", async ({ page })
   await expect(page.getByLabel("Dungeon Survivor map")).toBeVisible();
   await expect(page.getByText(/HP \d+\/\d+/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Restart run" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Attack" })).toBeVisible();
+  await expect(page.getByTestId("attack-effect")).toContainText("Ready");
+  await page.getByRole("button", { name: "Attack" }).click();
+  await expect(page.getByTestId("attack-effect")).toContainText("Slash!");
   await expect(page.getByRole("button", { name: "Up" })).toBeVisible();
 });
 

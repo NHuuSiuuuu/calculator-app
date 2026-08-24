@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Version 1 includes player movement, enemy chase AI, auto attack, HP/damage, XP/level, coins, random spawn/map, game over, restart, high score, and desktop/mobile controls.
+- Version 1 includes player movement, enemy chase AI, manual attack, HP/damage, XP/level, coins, random spawn/map, game over, restart, high score, and desktop/mobile controls.
 - Shop is out of scope for version 1.
 - Game save data uses `localStorage`; no Supabase-backed game saves in version 1.
 - Existing calculator, todo, and auth behavior must remain unchanged.

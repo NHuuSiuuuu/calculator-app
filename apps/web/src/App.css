@@ -567,7 +567,7 @@ input {
 
 .game-footer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
 }
 
@@ -588,6 +588,19 @@ input {
 
 .game-control--right {
   grid-column: 3;
+}
+
+.game-control--attack {
+  grid-column: 2;
+  border-color: rgba(245, 158, 11, 0.45);
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.game-attack-effect.is-active {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: #fffbeb;
+  color: #92400e;
 }
 
 @media (max-width: 480px) {
