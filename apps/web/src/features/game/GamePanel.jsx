@@ -21,6 +21,7 @@ function drawGame(canvas, state) {
   const height = canvas.height;
   const tileWidth = width / state.map.width;
   const tileHeight = height / state.map.height;
+  const tileSize = Math.min(tileWidth, tileHeight);
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = "#111827";
@@ -32,10 +33,14 @@ function drawGame(canvas, state) {
   }
 
   for (const effect of state.effects) {
+    if (effect.type === "slash") {
+      continue;
+    }
+
     context.globalAlpha = Math.max(0.2, effect.ttlMs / 360);
-    context.fillStyle = effect.type === "coin" ? "#facc15" : "#93c5fd";
+    context.fillStyle = "#facc15";
     context.beginPath();
-    context.arc((effect.x + 0.5) * tileWidth, (effect.y + 0.5) * tileHeight, Math.min(tileWidth, tileHeight) * 0.42, 0, Math.PI * 2);
+    context.arc((effect.x + 0.5) * tileWidth, (effect.y + 0.5) * tileHeight, tileSize * 0.42, 0, Math.PI * 2);
     context.fill();
     context.globalAlpha = 1;
   }
@@ -43,14 +48,35 @@ function drawGame(canvas, state) {
   for (const enemy of state.enemies) {
     context.fillStyle = "#ef4444";
     context.beginPath();
-    context.arc((enemy.x + 0.5) * tileWidth, (enemy.y + 0.5) * tileHeight, Math.min(tileWidth, tileHeight) * 0.38, 0, Math.PI * 2);
+    context.arc((enemy.x + 0.5) * tileWidth, (enemy.y + 0.5) * tileHeight, tileSize * 0.38, 0, Math.PI * 2);
     context.fill();
   }
 
   context.fillStyle = "#22c55e";
   context.beginPath();
-  context.arc((state.player.x + 0.5) * tileWidth, (state.player.y + 0.5) * tileHeight, Math.min(tileWidth, tileHeight) * 0.42, 0, Math.PI * 2);
+  context.arc((state.player.x + 0.5) * tileWidth, (state.player.y + 0.5) * tileHeight, tileSize * 0.42, 0, Math.PI * 2);
   context.fill();
+
+  for (const effect of state.effects.filter((item) => item.type === "slash")) {
+    const centerX = (effect.x + 0.5) * tileWidth;
+    const centerY = (effect.y + 0.5) * tileHeight;
+    const radius = tileSize * 0.82;
+
+    context.save();
+    context.globalAlpha = 1;
+    context.strokeStyle = "#f59e0b";
+    context.lineWidth = Math.max(6, tileSize * 0.2);
+    context.lineCap = "round";
+    context.beginPath();
+    context.arc(centerX, centerY, radius, -0.75 * Math.PI, 0.15 * Math.PI);
+    context.stroke();
+    context.strokeStyle = "#fde68a";
+    context.lineWidth = Math.max(2, tileSize * 0.06);
+    context.beginPath();
+    context.arc(centerX, centerY, radius * 0.72, -0.72 * Math.PI, 0.05 * Math.PI);
+    context.stroke();
+    context.restore();
+  }
 
   context.strokeStyle = "rgba(34, 197, 94, 0.35)";
   context.lineWidth = 2;

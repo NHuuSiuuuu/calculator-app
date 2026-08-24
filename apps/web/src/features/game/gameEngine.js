@@ -176,7 +176,7 @@ function applyCombat(player, enemies, input, deltaMs) {
       type: "slash",
       x: target?.x ?? nextPlayer.x,
       y: target?.y ?? nextPlayer.y,
-      ttlMs: 180,
+      ttlMs: 320,
     });
 
     if (target) {

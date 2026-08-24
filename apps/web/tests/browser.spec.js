@@ -68,6 +68,23 @@ test("game tab renders Dungeon Survivor on desktop and mobile", async ({ page })
   await expect(page.getByTestId("attack-effect")).toContainText("Ready");
   await page.getByRole("button", { name: "Attack" }).click();
   await expect(page.getByTestId("attack-effect")).toContainText("Slash!");
+  await expect.poll(async () => page.getByLabel("Dungeon Survivor map").evaluate((canvas) => {
+    const context = canvas.getContext("2d");
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let count = 0;
+
+    for (let index = 0; index < pixels.length; index += 4) {
+      const red = pixels[index];
+      const green = pixels[index + 1];
+      const blue = pixels[index + 2];
+
+      if (red > 220 && green > 80 && green < 190 && blue < 90) {
+        count += 1;
+      }
+    }
+
+    return count;
+  })).toBeGreaterThan(20);
   await expect(page.getByRole("button", { name: "Up" })).toBeVisible();
 });
 
