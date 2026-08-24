@@ -83,6 +83,266 @@ test("signed-out users see auth form instead of todos", async ({ page }) => {
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
 });
 
+test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {
+  let conversationRequestCount = 0;
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+  await page.route("**/api/conversations", async (route) => {
+    conversationRequestCount += 1;
+    if (conversationRequestCount === 1) {
+      await route.fulfill({ json: { conversations: [] } });
+      return;
+    }
+    await route.fulfill({ status: 500, json: { error: "Conversation refresh failed" } });
+  });
+  await page.route("**/api/me", (route) => route.fulfill({
+    json: { user: { id: "user-1", role: "admin" } },
+  }));
+  await page.route("**/api/documents", (route) => route.fulfill({ json: { documents: [] } }));
+  await page.route("**/api/chat", (route) => route.fulfill({
+    json: { conversationId: "conv-1", answer: "Answer", sources: [] },
+  }));
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Hello");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Hello", { exact: true })).toBeVisible();
+  await expect(page.getByText("Answer", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
+});
+
+test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: null, role: "admin" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({ conversationId: "conv-1", answer: "Demo answer", sources: [] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("hi");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Demo answer")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+});
+
+test("signed-in users can chat with AI Support and see sources", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options) => {
+      window.supportRequests ??= [];
+      window.supportRequests.push(String(url));
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversationId: "conv-1",
+            answer: "Chính sách hoàn tiền là 7 ngày.",
+            sources: [{ chunkId: "chunk-1", filename: "policy.md", similarity: 0.88 }],
+          }),
+        };
+      }
+      return { ok: true, json: async () => [] };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Chính sách hoàn tiền thế nào?");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Chính sách hoàn tiền là 7 ngày.")).toBeVisible();
+  await expect(page.getByText("policy.md")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
+});
+
+test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "admin-token",
+      user: { id: "admin-1", email: "admin@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return {
+          ok: true,
+          json: async () => ({
+            documents: [{
+              id: "doc-1",
+              filename: "broken.md",
+              status: "failed",
+              chunk_count: 0,
+              error_message: "Embedding failed",
+              created_at: "2026-08-24T10:15:00.000Z",
+            }],
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const documents = page.getByRole("region", { name: "Company documents" });
+  await expect(documents.getByText("broken.md")).toBeVisible();
+  await expect(documents.getByText("failed", { exact: true })).toBeVisible();
+  await expect(documents.getByText("0 chunks", { exact: true })).toBeVisible();
+  await expect(documents.getByText("2026-08-24 10:15 UTC", { exact: true })).toBeVisible();
+  await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
+});
+
+test("support discards a stale conversation response after the account changes", async ({ page }) => {
+  await page.addInitScript(() => {
+    const firstSession = {
+      access_token: "token-user-1",
+      user: { id: "user-1", email: "one@example.com" },
+    };
+    const secondSession = {
+      access_token: "token-user-2",
+      user: { id: "user-2", email: "two@example.com" },
+    };
+    let authListener;
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: firstSession }, error: null };
+        },
+        onAuthStateChange(listener) {
+          authListener = listener;
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+    window.switchSupportAccount = () => authListener("SIGNED_IN", secondSession);
+
+    window.fetch = async (url, options = {}) => {
+      const token = options.headers?.authorization;
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: token.endsWith("user-2") ? "user-2" : "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversations: token.endsWith("user-2") ? [] : [{ id: "conv-user-1", title: "Private user one chat" }],
+          }),
+        };
+      }
+      if (String(url).includes("/api/conversations/conv-user-1/messages")) {
+        return new Promise((resolve) => {
+          window.resolveOldConversation = () => resolve({
+            ok: true,
+            json: async () => ({
+              messages: [{ id: "message-user-1", role: "assistant", content: "Private answer for user one" }],
+            }),
+          });
+        });
+      }
+      return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Private user one chat" }).click();
+  await page.evaluate(() => window.switchSupportAccount());
+  await page.evaluate(() => window.resolveOldConversation());
+
+  await expect(page.getByText("Private user one chat", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Private answer for user one", { exact: true })).toHaveCount(0);
+});
+
 test("users can create an account before signing in", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {

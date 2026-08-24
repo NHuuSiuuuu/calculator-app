@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "apps/api"
   ],
   "scripts": {
-    "dev": "npm --workspace @calculator-app/web run dev",
+    "dev": "npm run dev:web",
+    "dev:web": "npm --workspace @calculator-app/web run dev",
+    "dev:api": "npm --workspace @calculator-app/api run dev",
     "build": "npm --workspace @calculator-app/web run build",
-    "test": "npm --workspace @calculator-app/web test",
+    "test": "npm --workspace @calculator-app/web test && npm run test:api",
+    "test:web": "npm --workspace @calculator-app/web test",
+    "test:api": "npm --workspace @calculator-app/api test",
     "test:e2e": "npm --workspace @calculator-app/web run test:e2e"
   },
   "devDependencies": {
