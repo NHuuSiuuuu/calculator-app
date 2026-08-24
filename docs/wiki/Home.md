@@ -2,7 +2,7 @@
 
 ## Overview
 
-Calculator App is a small static productivity app with a calculator and a Supabase-backed todo list.
+Calculator App is a React + Vite productivity app with a calculator and an authenticated Supabase Todo List.
 
 Repository:
 
@@ -10,17 +10,22 @@ Repository:
 https://github.com/NHuuSiuuuu/calculator-app
 ```
 
-Target live URL after GitHub Pages is enabled:
+## Architecture
 
 ```text
-https://nhuusiuuuu.github.io/calculator-app/
+Browser
+→ React app in apps/web
+→ Supabase Auth
+→ Supabase Postgres with RLS
 ```
 
-## How To Run Locally
+There is no custom Node.js server yet. Supabase Auth and RLS provide the user boundary for todos.
+
+## Local Development
 
 ```bash
 npm ci
-npm run serve
+npm run dev
 ```
 
 Open:
@@ -29,54 +34,46 @@ Open:
 http://127.0.0.1:4173
 ```
 
-## How To Verify
+## Verification
 
 ```bash
 npm test
 npm run test:e2e
+npm run build
 ```
 
-## Project Tracking
+## Supabase
 
-- Bugs: GitHub Issues with the bug report template
-- Features: GitHub Issues with the feature request template
-- Code review: Pull requests with the PR checklist
-- Status: `docs/PROJECT_STATUS.md`
-- UI identity: `DESIGN.md`
-
-## Current State
-
-- App code is committed and pushed to GitHub.
-- Real-project tracking setup is documented in the repo.
-- GitHub Actions CI is configured in `.github/workflows/ci.yml`.
-- GitHub Pages still needs to be enabled from `main` and `/root`.
-- Todo List needs a Supabase project URL and anon key in `config.js` before it can persist data.
-
-## Roadmap
-
-- Done: static calculator UI and arithmetic logic
-- Done: delete individual in-memory history entries
-- Done: Supabase Todo List implementation branch
-- Done: unit/static tests and Playwright desktop/mobile tests
-- Done: GitHub repository push
-- Done: real-project tracking setup
-- Next: merge operations setup to `main`
-- Next: enable GitHub Pages in repository settings from `main` and `/root`
-- Next: add Supabase config in `config.js`
-- Next: use GitHub Issues and pull requests for future changes
-
-## GitHub Pages Setup
-
-Enable Pages manually:
+Run:
 
 ```text
-Repository Settings -> Pages -> Deploy from branch -> main -> /root
+supabase/migrations/0001_user_owned_todos.sql
 ```
 
-## Working Rules
+The migration works for a new project and for the earlier anonymous Todo demo. Anonymous rows without `user_id` are removed before RLS ownership is enforced.
 
-- Use Superpowers guidance for coding, debugging, and review tasks.
-- Use git for change tracking.
-- Keep README and wiki/status documentation current.
-- Test with real browser checks for UI changes.
-- Do not report completion without verification evidence.
+Configure:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+Never expose service role keys, database passwords, or JWT secrets in frontend code.
+
+## Vercel
+
+Recommended settings:
+
+- Framework Preset: `Vite`
+- Root Directory: `apps/web`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+## Tracking
+
+- Bugs/features: GitHub Issues
+- Code review: Pull Requests
+- CI: `.github/workflows/ci.yml`
+- Project status: `docs/PROJECT_STATUS.md`
+- UI identity: `DESIGN.md`

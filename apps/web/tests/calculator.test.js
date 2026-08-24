@@ -11,7 +11,7 @@ import {
   clear,
   backspace,
   deleteHistoryEntry,
-} from "../src/calculator.js";
+} from "../src/features/calculator/calculator.js";
 
 test("calculate handles addition, subtraction, multiplication, and division", () => {
   assert.equal(calculate(7, "+", 5), 12);

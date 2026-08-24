@@ -36,7 +36,7 @@ tokens:
 
 ## Purpose
 
-The app is a focused utility workspace for basic arithmetic and lightweight task tracking. The interface should feel precise, readable, and fast rather than decorative.
+The app is a focused React utility workspace for basic arithmetic and authenticated task tracking. The interface should feel precise, readable, and fast rather than decorative.
 
 ## Visual Direction
 
@@ -48,7 +48,8 @@ Use a light workbench layout with a white calculator surface, crisp blue primary
 - Display: fixed-height result area with expression, current value, and inline error text.
 - Keypad: stable four-column grid with equal-size buttons to prevent layout shifts.
 - History: compact list of recent completed calculations with a small per-entry delete control.
-- Todo List: compact Supabase-backed task list with create, complete, edit, delete, loading, empty, setup, and error states.
+- Auth Panel: compact email/password sign in and sign up controls shown inside the Todo tab.
+- Todo List: compact Supabase-backed task list with create, complete, edit, delete, loading, empty, signed-out, and error states.
 - Actions: clear, delete, todo add, edit, save, and delete controls with clear labels and keyboard focus states.
 
 ## Responsive Behavior
@@ -57,4 +58,4 @@ The workspace is centered on desktop with a constrained width. On mobile it fill
 
 ## Accessibility
 
-Buttons use semantic HTML, visible focus rings, adequate contrast, and keyboard support. Calculator shortcuts are active only while the Calculator tab is visible, so typing in Todo inputs cannot trigger calculator operations.
+Buttons use semantic HTML, visible focus rings, adequate contrast, and keyboard support. Calculator shortcuts do not run while typing in auth or Todo inputs.
