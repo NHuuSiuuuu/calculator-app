@@ -56,6 +56,31 @@ test("calculator layout is visible without horizontal overflow", async ({ page }
   expect(hasHorizontalOverflow).toBe(false);
 });
 
+test("game tab renders Dungeon Survivor on desktop and mobile", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Game" }).click();
+
+  await expect(page.getByRole("heading", { name: "Dungeon Survivor" })).toBeVisible();
+  await expect(page.getByLabel("Dungeon Survivor map")).toBeVisible();
+  await expect(page.getByText(/HP \d+\/\d+/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Restart run" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Up" })).toBeVisible();
+});
+
+test("game tab supports keyboard movement", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Game" }).click();
+
+  const position = page.getByTestId("player-position");
+  await expect(position).toBeVisible();
+  const before = await position.textContent();
+  await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(250);
+  await page.keyboard.up("ArrowRight");
+
+  await expect(position).not.toHaveText(before ?? "");
+});
+
 test("signed-out users see auth form instead of todos", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {

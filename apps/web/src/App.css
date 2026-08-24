@@ -48,7 +48,7 @@ input {
 
 .app-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -84,7 +84,8 @@ input {
 }
 
 .calculator__header,
-.todo-panel__header {
+.todo-panel__header,
+.game-panel__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -95,6 +96,7 @@ input {
 .eyebrow,
 .calculator h1,
 .todo-panel h1,
+.game-panel h1,
 .history-panel h2 {
   margin: 0;
 }
@@ -108,7 +110,8 @@ input {
 }
 
 .calculator h1,
-.todo-panel h1 {
+.todo-panel h1,
+.game-panel h1 {
   margin-top: 4px;
   font-size: 1.45rem;
   line-height: 1.15;
@@ -493,6 +496,100 @@ input {
   gap: 8px;
 }
 
+.game-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.game-button,
+.game-control {
+  min-height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.game-button:focus-visible,
+.game-control:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.game-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.game-hud span,
+.game-footer span {
+  min-height: 30px;
+  padding: 7px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.game-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  background: #111827;
+}
+
+.game-canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 14 / 9;
+  background: #111827;
+}
+
+.game-over {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  background: rgba(17, 24, 39, 0.72);
+  color: #ffffff;
+  font-weight: 800;
+  text-align: center;
+}
+
+.game-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.game-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.game-control--up,
+.game-control--down {
+  grid-column: 2;
+}
+
+.game-control--left {
+  grid-column: 1;
+}
+
+.game-control--right {
+  grid-column: 3;
+}
+
 @media (max-width: 480px) {
   .app-shell {
     align-items: stretch;
@@ -508,12 +605,14 @@ input {
   }
 
   .calculator__header,
-  .todo-panel__header {
+  .todo-panel__header,
+  .game-panel__header {
     align-items: center;
   }
 
   .calculator h1,
-  .todo-panel h1 {
+  .todo-panel h1,
+  .game-panel h1 {
     font-size: 1.25rem;
   }
 
@@ -542,5 +641,13 @@ input {
   .todo-actions {
     grid-column: 1 / -1;
     justify-content: flex-end;
+  }
+
+  .game-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-footer {
+    grid-template-columns: 1fr;
   }
 }

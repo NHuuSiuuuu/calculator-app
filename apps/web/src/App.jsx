@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthPanel } from "./features/auth/AuthPanel.jsx";
 import { createAuthApi } from "./features/auth/authState.js";
 import { Calculator } from "./features/calculator/Calculator.jsx";
+import { GamePanel } from "./features/game/GamePanel.jsx";
 import { TodoPanel } from "./features/todos/TodoPanel.jsx";
 import { createSupabaseClient } from "./lib/supabase/client.js";
 import { createTodoRepository } from "./lib/supabase/todos.js";
@@ -78,6 +79,18 @@ export function App() {
           >
             Todo List
           </button>
+          <button
+            id="tab-game"
+            className={`app-tab${activeTab === "game" ? " is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "game"}
+            aria-controls="panel-game"
+            tabIndex={activeTab === "game" ? 0 : -1}
+            onClick={() => setActiveTab("game")}
+          >
+            Game
+          </button>
         </nav>
         <div hidden={activeTab !== "calculator"}>
           <Calculator />
@@ -99,6 +112,14 @@ export function App() {
           <AuthPanel authApi={authApi} session={session} onSessionChange={setSession} />
           <TodoPanel repository={todoRepository} session={session} />
         </section>
+        <div
+          id="panel-game"
+          role="tabpanel"
+          aria-labelledby="tab-game"
+          hidden={activeTab !== "game"}
+        >
+          <GamePanel />
+        </div>
       </div>
     </main>
   );
