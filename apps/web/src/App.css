@@ -48,7 +48,7 @@ input {
 
 .app-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -491,6 +491,231 @@ input {
   grid-column: 1 / -1;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
+}
+
+.support-header,
+.support-admin__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-header {
+  margin-bottom: 14px;
+}
+
+.support-header h1,
+.support-header p,
+.support-empty-state h1,
+.support-empty-state p,
+.support-sidebar h2,
+.support-admin h2,
+.support-message p {
+  margin: 0;
+}
+
+.support-header h1,
+.support-empty-state h1 {
+  margin: 4px 0;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.support-header > div > p:last-child,
+.support-empty-state p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.support-layout {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.support-sidebar,
+.support-chat,
+.support-admin {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.support-sidebar,
+.support-chat,
+.support-admin {
+  padding: 12px;
+}
+
+.support-sidebar h2,
+.support-admin h2 {
+  font-size: 0.9rem;
+}
+
+.support-main {
+  display: grid;
+  gap: 14px;
+}
+
+.support-conversations,
+.support-documents {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.support-conversation {
+  width: 100%;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.support-conversation.is-selected {
+  border-color: var(--color-primary);
+  background: #dbeafe;
+}
+
+.support-messages {
+  display: grid;
+  gap: 10px;
+  min-height: 260px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.support-message {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  overflow-wrap: anywhere;
+}
+
+.support-message.is-user {
+  justify-self: end;
+  background: #dbeafe;
+}
+
+.support-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.support-source-chip {
+  padding: 3px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.support-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.support-compose input {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+}
+
+.support-compose button,
+.support-upload {
+  min-height: 42px;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.support-compose button {
+  padding: 0 12px;
+}
+
+.support-compose button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.support-upload {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.support-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.support-message-status {
+  min-height: 20px;
+  margin: 0 0 10px;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.support-message-status.is-error {
+  color: var(--color-danger);
+}
+
+.support-empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 720px) {
+  .support-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {

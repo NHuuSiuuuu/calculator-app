@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthPanel } from "./features/auth/AuthPanel.jsx";
 import { createAuthApi } from "./features/auth/authState.js";
 import { Calculator } from "./features/calculator/Calculator.jsx";
+import { AiSupportPanel } from "./features/support/AiSupportPanel.jsx";
 import { TodoPanel } from "./features/todos/TodoPanel.jsx";
 import { createSupabaseClient } from "./lib/supabase/client.js";
 import { createTodoRepository } from "./lib/supabase/todos.js";
@@ -78,6 +79,18 @@ export function App() {
           >
             Todo List
           </button>
+          <button
+            id="tab-support"
+            className={`app-tab${activeTab === "support" ? " is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "support"}
+            aria-controls="panel-support"
+            tabIndex={activeTab === "support" ? 0 : -1}
+            onClick={() => setActiveTab("support")}
+          >
+            AI Support
+          </button>
         </nav>
         <div hidden={activeTab !== "calculator"}>
           <Calculator />
@@ -98,6 +111,15 @@ export function App() {
           </header>
           <AuthPanel authApi={authApi} session={session} onSessionChange={setSession} />
           <TodoPanel repository={todoRepository} session={session} />
+        </section>
+        <section
+          id="panel-support"
+          className={`support-panel app-panel${activeTab === "support" ? " is-active" : ""}`}
+          role="tabpanel"
+          aria-labelledby="tab-support"
+          hidden={activeTab !== "support"}
+        >
+          <AiSupportPanel session={session} />
         </section>
       </div>
     </main>
