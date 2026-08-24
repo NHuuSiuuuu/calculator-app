@@ -4,18 +4,25 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState("error");
   const [isLoading, setIsLoading] = useState(false);
 
-  async function runAuth(action) {
+  async function runAuth(action, options = {}) {
     setMessage("");
+    setMessageTone("error");
     setIsLoading(true);
 
     try {
       const nextSession = await action();
       onSessionChange(nextSession);
       setPassword("");
+      if (!nextSession && options.successMessage) {
+        setMessage(options.successMessage);
+        setMessageTone("success");
+      }
     } catch (error) {
       setMessage(error.message);
+      setMessageTone("error");
     } finally {
       setIsLoading(false);
     }
@@ -33,13 +40,13 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
     return (
       <section className="auth-panel" aria-label="Account">
         <p>
-          Signed in as <strong>{session.user.email}</strong>
+          Đang đăng nhập bằng <strong>{session.user.email}</strong>
         </p>
         <button type="button" className="todo-action" disabled={isLoading} onClick={() => runAuth(async () => {
           await authApi.signOut();
           return null;
         })}>
-          Sign out
+          Đăng xuất
         </button>
         {message ? <p className="todo-message is-error" role="alert">{message}</p> : null}
       </section>
@@ -48,7 +55,7 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
 
   return (
     <section className="auth-panel" aria-label="Sign in">
-      <p>Sign in to manage your todos.</p>
+      <p>Đăng nhập để quản lý Todo.</p>
       <div className="auth-grid">
         <label htmlFor="auth-email">Email</label>
         <input
@@ -71,13 +78,25 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
       </div>
       <div className="auth-actions">
         <button type="button" className="todo-add" disabled={isLoading} onClick={() => runAuth(() => authApi.signIn(email.trim(), password))}>
-          Sign in
+          Đăng nhập
         </button>
-        <button type="button" className="todo-action" disabled={isLoading} onClick={() => runAuth(() => authApi.signUp(email.trim(), password))}>
-          Sign up
+        <button
+          type="button"
+          className="todo-action"
+          disabled={isLoading}
+          onClick={() => runAuth(
+            () => authApi.signUp(email.trim(), password),
+            { successMessage: "Đã tạo tài khoản. Hãy kiểm tra email để xác nhận, rồi đăng nhập." },
+          )}
+        >
+          Đăng ký tài khoản
         </button>
       </div>
-      {message ? <p className="todo-message is-error" role="alert">{message}</p> : null}
+      {message ? (
+        <p className={`todo-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }
