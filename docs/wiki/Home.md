@@ -19,7 +19,7 @@ Browser
 → Supabase Postgres with RLS
 ```
 
-There is no custom Node.js server yet. Supabase Auth and RLS provide the user boundary for todos.
+AI Support RAG uses a custom Node.js API backend; Supabase Auth and RLS provide the user boundary for todos.
 
 ## AI Support RAG
 
