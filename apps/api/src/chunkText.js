@@ -1,6 +1,11 @@
 export function chunkText(text, options = {}) {
   const maxChars = options.maxChars ?? 1200;
-  const overlapChars = options.overlapChars ?? 180;
+  if (!Number.isInteger(maxChars) || maxChars <= 0) {
+    throw new RangeError("maxChars must be a positive integer");
+  }
+
+  const requestedOverlap = options.overlapChars ?? 180;
+  const overlapChars = Math.min(Math.max(0, requestedOverlap), maxChars - 1);
   const normalized = String(text ?? "").replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
 
   if (!normalized) {
