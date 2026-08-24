@@ -1,11 +1,30 @@
 import { useState } from "react";
 
 export function AuthPanel({ authApi, session, onSessionChange }) {
+  const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState("error");
   const [isLoading, setIsLoading] = useState(false);
+
+  function selectMode(nextMode) {
+    setMode(nextMode);
+    setMessage("");
+    setMessageTone("error");
+  }
+
+  function validateCredentials(actionLabel) {
+    if (!email.trim()) {
+      return `Nhập email trước khi ${actionLabel}.`;
+    }
+
+    if (password.length < 6) {
+      return `Nhập mật khẩu ít nhất 6 ký tự trước khi ${actionLabel}.`;
+    }
+
+    return "";
+  }
 
   async function runAuth(action, options = {}) {
     setMessage("");
@@ -56,6 +75,26 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
   return (
     <section className="auth-panel" aria-label="Sign in">
       <p>Đăng nhập để quản lý Todo.</p>
+      <div className="auth-mode-tabs" role="tablist" aria-label="Chọn chế độ tài khoản">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "signin"}
+          className={mode === "signin" ? "auth-mode-tab is-active" : "auth-mode-tab"}
+          onClick={() => selectMode("signin")}
+        >
+          Đăng nhập
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "signup"}
+          className={mode === "signup" ? "auth-mode-tab is-active" : "auth-mode-tab"}
+          onClick={() => selectMode("signup")}
+        >
+          Đăng ký
+        </button>
+      </div>
       <div className="auth-grid">
         <label htmlFor="auth-email">Email</label>
         <input
@@ -77,20 +116,41 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
         />
       </div>
       <div className="auth-actions">
-        <button type="button" className="todo-add" disabled={isLoading} onClick={() => runAuth(() => authApi.signIn(email.trim(), password))}>
-          Đăng nhập
-        </button>
-        <button
-          type="button"
-          className="todo-action"
-          disabled={isLoading}
-          onClick={() => runAuth(
-            () => authApi.signUp(email.trim(), password),
-            { successMessage: "Đã tạo tài khoản. Hãy kiểm tra email để xác nhận, rồi đăng nhập." },
-          )}
-        >
-          Đăng ký tài khoản
-        </button>
+        {mode === "signin" ? (
+          <button type="button" className="todo-add" disabled={isLoading} onClick={() => {
+            const validationError = validateCredentials("đăng nhập");
+            if (validationError) {
+              setMessage(validationError);
+              setMessageTone("error");
+              return;
+            }
+
+            runAuth(() => authApi.signIn(email.trim(), password));
+          }}>
+            Đăng nhập
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="todo-add"
+            disabled={isLoading}
+            onClick={() => {
+              const validationError = validateCredentials("đăng ký");
+              if (validationError) {
+                setMessage(validationError);
+                setMessageTone("error");
+                return;
+              }
+
+              runAuth(
+                () => authApi.signUp(email.trim(), password),
+                { successMessage: "Đã tạo tài khoản. Hãy kiểm tra email để xác nhận, rồi đăng nhập." },
+              );
+            }}
+          >
+            Đăng ký
+          </button>
+        )}
       </div>
       {message ? (
         <p className={`todo-message is-${messageTone}`} role={messageTone === "error" ? "alert" : "status"}>

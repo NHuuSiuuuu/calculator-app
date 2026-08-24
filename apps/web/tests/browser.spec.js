@@ -74,10 +74,12 @@ test("signed-out users see auth form instead of todos", async ({ page }) => {
   await page.getByRole("tab", { name: "Todo List" }).click();
 
   await expect(page.getByText("Đăng nhập để quản lý Todo.")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Đăng nhập" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Đăng ký" })).toBeVisible();
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("Password")).toBeVisible();
   await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Đăng ký tài khoản" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng ký" })).not.toBeVisible();
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
 });
 
@@ -100,13 +102,39 @@ test("users can create an account before signing in", async ({ page }) => {
 
   await page.goto("/");
   await page.getByRole("tab", { name: "Todo List" }).click();
+  await page.getByRole("tab", { name: "Đăng ký" }).click();
 
   await page.getByLabel("Email").fill("new@example.com");
   await page.getByLabel("Password").fill("password123");
-  await page.getByRole("button", { name: "Đăng ký tài khoản" }).click();
+  await page.getByRole("button", { name: "Đăng ký" }).click();
 
   await expect(page.getByRole("status")).toContainText("Đã tạo tài khoản");
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
+});
+
+test("signup tab validates required credentials before calling Supabase", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        async signUp() {
+          throw new Error("Supabase signup should not be called for an invalid form.");
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Todo List" }).click();
+  await page.getByRole("tab", { name: "Đăng ký" }).click();
+  await page.getByRole("button", { name: "Đăng ký" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("Nhập email trước khi đăng ký.");
 });
 
 test("signed-in users can manage only authenticated todos and sign out", async ({ page }) => {
