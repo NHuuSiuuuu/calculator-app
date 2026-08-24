@@ -127,7 +127,7 @@ test("support keeps completed chat messages when conversation refresh fails", as
   await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
 });
 
-test("signed-out users cannot use AI Support", async ({ page }) => {
+test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {
       auth: {
@@ -139,12 +139,35 @@ test("signed-out users cannot use AI Support", async ({ page }) => {
         },
       },
     };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: null, role: "admin" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({ conversationId: "conv-1", answer: "Demo answer", sources: [] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
   });
 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("hi");
+  await page.getByRole("button", { name: "Gửi" }).click();
 
-  await expect(page.getByText("Đăng nhập để dùng AI Support.")).toBeVisible();
+  await expect(page.getByText("Demo answer")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
 });
 
 test("signed-in users can chat with AI Support and see sources", async ({ page }) => {

@@ -3,7 +3,7 @@ export function readApiConfig(env = process.env) {
     openaiApiKey: String(env.OPENAI_API_KEY ?? ""),
     embeddingModel: String(env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small"),
     chatModel: String(env.OPENAI_CHAT_MODEL || "gpt-4.1-mini"),
-    supabaseUrl: String(env.SUPABASE_URL ?? "").replace(/\/+$/, ""),
+    supabaseUrl: String(env.SUPABASE_URL || env.VITE_SUPABASE_URL || "").replace(/\/+$/, ""),
     supabaseServiceRoleKey: String(env.SUPABASE_SERVICE_ROLE_KEY ?? ""),
     port: Number.parseInt(String(env.PORT ?? "8787"), 10),
   };

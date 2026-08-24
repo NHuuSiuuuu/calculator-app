@@ -37,15 +37,6 @@ export function AiSupportPanel({ session, supportApi }) {
   }), [session, supportApi]);
 
   useEffect(() => {
-    if (!session) {
-      setConversations([]);
-      setMessages([]);
-      setDocuments([]);
-      setIsAdmin(false);
-      setSelectedConversationId(null);
-      return undefined;
-    }
-
     let isCurrent = true;
     async function loadSupportData() {
       try {
@@ -73,7 +64,7 @@ export function AiSupportPanel({ session, supportApi }) {
     return () => {
       isCurrent = false;
     };
-  }, [api, session]);
+  }, [api]);
 
   async function selectConversation(conversationId) {
     const request = conversationRequestGuard.current.begin();
@@ -155,16 +146,6 @@ export function AiSupportPanel({ session, supportApi }) {
       setIsUploading(false);
       event.target.value = "";
     }
-  }
-
-  if (!session) {
-    return (
-      <div className="support-empty-state">
-        <h1>AI Support</h1>
-        <p>Hỏi theo tài liệu công ty</p>
-        <p>Đăng nhập để dùng AI Support.</p>
-      </div>
-    );
   }
 
   return (

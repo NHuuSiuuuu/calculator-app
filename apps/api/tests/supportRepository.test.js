@@ -121,6 +121,41 @@ test("repository gets a conversation scoped by its owner", async () => {
   ]);
 });
 
+test("repository scopes demo conversations with a null owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  const conversation = await repository.getConversation(null, "conv-1");
+
+  assert.deepEqual(conversation, { id: "conv-1" });
+  assert.deepEqual(calls, [
+    ["select", "id"],
+    ["eq", "id", "conv-1"],
+    ["is", "user_id", null],
+  ]);
+});
+
 test("repository reconstructs persisted message sources from retrieved chunk IDs", async () => {
   const repository = createSupportRepository({
     from(table) {

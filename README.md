@@ -85,9 +85,9 @@ VITE_SUPPORT_API_URL=http://127.0.0.1:8787
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser.
+The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
 
-Frontend environment:
+Frontend environment for local development with a separate API server:
 
 ```bash
 VITE_SUPPORT_API_URL=https://your-api-host.example.com
@@ -109,13 +109,7 @@ Run the RAG migration in Supabase SQL Editor after `0001`:
 supabase/migrations/0002_ai_rag_support.sql
 ```
 
-Set an admin user by updating their profile role:
-
-```sql
-update public.profiles
-set role = 'admin'
-where email = 'admin@example.com';
-```
+The demo support API stores chat and document records without an auth user. Todo List auth is unchanged.
 
 ## Run Locally
 
@@ -156,28 +150,24 @@ npm run build
 
 ## Vercel Deployment
 
-Use these project settings:
+Use these project settings so Vercel deploys both the web build and the root `/api/*` serverless function:
 
 - Framework Preset: `Vite`
-- Root Directory: `apps/web`
+- Root Directory: repository root
 - Build Command: `npm run build`
-- Output Directory: `dist`
+- Output Directory: `apps/web/dist`
 
 Add environment variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_SUPPORT_API_URL` set to the public HTTPS URL of the deployed API
+- `OPENAI_API_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_EMBEDDING_MODEL` optional, defaults to `text-embedding-3-small`
+- `OPENAI_CHAT_MODEL` optional, defaults to `gpt-4.1-mini`
 
-Deploy `apps/api` separately to a Node.js host that supports a long-running HTTP server:
-
-1. Build from the repository root and install with `npm ci`.
-2. Start with `npm --workspace @calculator-app/api start`.
-3. Set `OPENAI_API_KEY`, `OPENAI_EMBEDDING_MODEL`, `OPENAI_CHAT_MODEL`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` on the API host.
-4. Set the API host's `PORT` if the platform does not inject one automatically.
-5. Put the resulting HTTPS origin in Vercel as `VITE_SUPPORT_API_URL`, then redeploy the web app.
-
-Vercel deploys only the frontend in this setup; the AI Support routes are served by the separate Node API.
+Leave `VITE_SUPPORT_API_URL` unset on Vercel when using the same project. The browser will call `/api/chat`, `/api/documents`, and related routes on the same domain.
 
 ## Tracking
 

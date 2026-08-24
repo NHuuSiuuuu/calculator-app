@@ -19,13 +19,13 @@ Browser
 └→ Node.js API in apps/api → OpenAI and Supabase pgvector
 ```
 
-AI Support RAG uses a custom Node.js API backend; Supabase Auth and RLS provide the user boundary for todos.
+AI Support RAG uses a custom Node.js API backend. The current demo exposes AI Support without sign-in, while Supabase Auth and RLS still provide the user boundary for todos.
 
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; final review fixes applied
-- Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+- Scope: demo chat without sign-in, `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
 
 ## Local Development
 
@@ -69,7 +69,6 @@ Configure:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
-VITE_SUPPORT_API_URL
 ```
 
 Never expose service role keys, database passwords, or JWT secrets in frontend code.
@@ -79,12 +78,12 @@ Never expose service role keys, database passwords, or JWT secrets in frontend c
 Recommended settings:
 
 - Framework Preset: `Vite`
-- Root Directory: `apps/web`
+- Root Directory: repository root
 - Build Command: `npm run build`
-- Output Directory: `dist`
-- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPPORT_API_URL`
+- Output Directory: `apps/web/dist`
+- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-Deploy `apps/api` separately to a Node.js host. Install with `npm ci`, start with `npm --workspace @calculator-app/api start`, and configure the OpenAI and Supabase backend variables on that host. Point `VITE_SUPPORT_API_URL` at its public HTTPS origin.
+The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
 
 ## Tracking
 

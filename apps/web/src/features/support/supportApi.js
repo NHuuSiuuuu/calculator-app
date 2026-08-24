@@ -11,11 +11,12 @@ export function createSupportApi({
 
   async function request(path, options = {}) {
     const token = getAccessToken();
+    const authHeaders = token ? { authorization: `Bearer ${token}` } : {};
     const response = await fetchImpl(`${root}${path}`, {
       ...options,
       headers: {
         ...(options.body instanceof FormData ? {} : { "content-type": "application/json" }),
-        authorization: `Bearer ${token}`,
+        ...authHeaders,
         ...(options.headers ?? {}),
       },
     });

@@ -8,6 +8,10 @@ function selectSingle(query) {
   return query.select("*").single();
 }
 
+function scopeByNullableUser(query, userId) {
+  return userId === null ? query.is("user_id", null) : query.eq("user_id", userId);
+}
+
 export function createSupportRepository(supabase) {
   return {
     async createDocument({ ownerId, filename, contentType }) {
@@ -91,29 +95,29 @@ export function createSupportRepository(supabase) {
     },
 
     async listConversations(userId) {
-      const { data, error } = await supabase.from("support_conversations")
-        .select("*")
-        .eq("user_id", userId)
+      const query = supabase.from("support_conversations")
+        .select("*");
+      const { data, error } = await scopeByNullableUser(query, userId)
         .order("updated_at", { ascending: false });
       raiseIfError(error);
       return data;
     },
 
     async getConversation(userId, conversationId) {
-      const { data, error } = await supabase.from("support_conversations")
+      const query = supabase.from("support_conversations")
         .select("id")
-        .eq("id", conversationId)
-        .eq("user_id", userId)
+        .eq("id", conversationId);
+      const { data, error } = await scopeByNullableUser(query, userId)
         .maybeSingle();
       raiseIfError(error);
       return data;
     },
 
     async getMessages(userId, conversationId) {
-      const { data: conversation, error: conversationError } = await supabase.from("support_conversations")
+      const query = supabase.from("support_conversations")
         .select("id")
-        .eq("id", conversationId)
-        .eq("user_id", userId)
+        .eq("id", conversationId);
+      const { data: conversation, error: conversationError } = await scopeByNullableUser(query, userId)
         .maybeSingle();
       raiseIfError(conversationError);
       if (!conversation) {

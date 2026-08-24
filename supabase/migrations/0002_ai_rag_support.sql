@@ -7,7 +7,7 @@ check (role in ('admin', 'user'));
 
 create table if not exists public.support_documents (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
+  owner_id uuid references auth.users(id) on delete cascade,
   filename text not null check (char_length(btrim(filename)) between 1 and 180),
   content_type text not null check (content_type in ('text/plain', 'text/markdown')),
   status text not null default 'processing' check (status in ('processing', 'ready', 'failed')),
@@ -34,11 +34,17 @@ with (lists = 100);
 
 create table if not exists public.support_conversations (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   title text not null check (char_length(btrim(title)) between 1 and 120),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.support_documents
+alter column owner_id drop not null;
+
+alter table public.support_conversations
+alter column user_id drop not null;
 
 create table if not exists public.support_messages (
   id uuid primary key default gen_random_uuid(),

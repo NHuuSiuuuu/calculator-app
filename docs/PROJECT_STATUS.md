@@ -25,9 +25,9 @@
 - Supabase migration with `user_id`, existing-table upgrade handling, and RLS scoped to `auth.uid()`
 - Auth-gated Todo UI
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
-- Authenticated AI Support chat with grounded OpenAI answers
-- Admin `.txt` and `.md` ingestion with pgvector embeddings and status metadata
-- User-owned conversation history with reconstructed source metadata and recency ordering
+- Demo AI Support chat with grounded OpenAI answers without requiring sign-in
+- Public demo `.txt` and `.md` ingestion with pgvector embeddings and status metadata
+- Demo conversation history with reconstructed source metadata and recency ordering
 
 ## Required Supabase Setup
 
@@ -43,10 +43,9 @@ Set these frontend environment variables:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
-VITE_SUPPORT_API_URL
 ```
 
-The API also requires `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. Do not use service role keys or database passwords in frontend code.
+The same Vercel project also requires `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` for `/api/*`. Do not use service role keys or database passwords in frontend code.
 
 If the database already contains todos from the earlier anonymous demo, the migration removes rows without `user_id` before enforcing per-user ownership.
 
@@ -61,13 +60,13 @@ npm run build
 
 ## Deployment Notes
 
-Use Vercel for `apps/web` with:
+Use Vercel from the repository root with:
 
-- Root Directory: `apps/web`
+- Root Directory: repository root
 - Build Command: `npm run build`
-- Output Directory: `dist`
+- Output Directory: `apps/web/dist`
 
-Deploy `apps/api` to a Node.js host with `npm --workspace @calculator-app/api start`, then configure its HTTPS URL as `VITE_SUPPORT_API_URL` in Vercel.
+The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
 
 ## Roadmap
 

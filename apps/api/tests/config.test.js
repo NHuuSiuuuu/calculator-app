@@ -19,3 +19,13 @@ test("readApiConfig normalizes API configuration", () => {
   assert.equal(config.supabaseUrl, "https://demo.supabase.co");
   assert.equal(config.port, 5050);
 });
+
+test("readApiConfig can reuse the Vite Supabase URL on same-domain Vercel deploys", () => {
+  const config = readApiConfig({
+    OPENAI_API_KEY: "sk-test",
+    VITE_SUPABASE_URL: "https://demo.supabase.co/",
+    SUPABASE_SERVICE_ROLE_KEY: "service-role",
+  });
+
+  assert.equal(config.supabaseUrl, "https://demo.supabase.co");
+});
