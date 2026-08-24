@@ -10,6 +10,12 @@
 - Database migrations path: `supabase/migrations`
 - Recommended deploy target: Vercel
 
+## AI Support RAG
+
+- Branch: `feature/ai-rag-support-system`
+- Status: planned implementation
+- Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+
 ## Implemented
 
 - Calculator tab ported to React

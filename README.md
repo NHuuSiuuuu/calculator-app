@@ -72,6 +72,40 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 ```
 
+## AI Support RAG Setup
+
+The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser.
+
+Frontend environment:
+
+```bash
+VITE_SUPPORT_API_URL=https://your-api-host.example.com
+```
+
+Backend environment:
+
+```bash
+OPENAI_API_KEY=sk-...
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_CHAT_MODEL=gpt-4.1-mini
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+Run the RAG migration in Supabase SQL Editor:
+
+```text
+supabase/migrations/0002_ai_rag_support.sql
+```
+
+Set an admin user by updating their profile role:
+
+```sql
+update public.profiles
+set role = 'admin'
+where email = 'admin@example.com';
+```
+
 ## Run Locally
 
 ```bash

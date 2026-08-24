@@ -21,6 +21,12 @@ Browser
 
 There is no custom Node.js server yet. Supabase Auth and RLS provide the user boundary for todos.
 
+## AI Support RAG
+
+- Branch: `feature/ai-rag-support-system`
+- Status: planned implementation
+- Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+
 ## Local Development
 
 ```bash

@@ -204,7 +204,7 @@ export function AiSupportPanel({ session, supportApi }) {
               ))}
             </div>
             <form className="support-compose" onSubmit={submitMessage}>
-              <label className="sr-only" htmlFor="support-message">Support question</label>
+              <label className="sr-only" htmlFor="support-message">Câu hỏi</label>
               <input
                 id="support-message"
                 value={input}
@@ -212,7 +212,7 @@ export function AiSupportPanel({ session, supportApi }) {
                 placeholder="Ask about company documents"
                 disabled={isSending}
               />
-              <button type="submit" disabled={isSending || !input.trim()}>Send</button>
+              <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
             </form>
           </section>
 

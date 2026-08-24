@@ -116,12 +116,80 @@ test("support keeps completed chat messages when conversation refresh fails", as
 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
-  await page.getByLabel("Support question").fill("Hello");
-  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByLabel("Câu hỏi").fill("Hello");
+  await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Hello", { exact: true })).toBeVisible();
   await expect(page.getByText("Answer", { exact: true })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
+});
+
+test("signed-out users cannot use AI Support", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.getByText("Đăng nhập để dùng AI Support.")).toBeVisible();
+});
+
+test("signed-in users can chat with AI Support and see sources", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options) => {
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => [] };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => [{ id: "doc-1", filename: "policy.md", status: "ready", chunk_count: 2 }] };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversationId: "conv-1",
+            answer: "Chính sách hoàn tiền là 7 ngày.",
+            sources: [{ chunkId: "chunk-1", filename: "policy.md", similarity: 0.88 }],
+          }),
+        };
+      }
+      return { ok: true, json: async () => [] };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Chính sách hoàn tiền thế nào?");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Chính sách hoàn tiền là 7 ngày.")).toBeVisible();
+  await expect(page.getByText("policy.md")).toBeVisible();
 });
 
 test("users can create an account before signing in", async ({ page }) => {
