@@ -165,7 +165,10 @@ export function createApiServer({ authService, repository, openAiClient }) {
 
       throw routeNotFound();
     } catch (error) {
-      sendJson(response, error.statusCode ?? 500, { error: error.message ?? "Internal server error" });
+      const statusCode = error.statusCode ?? 500;
+      sendJson(response, statusCode, {
+        error: statusCode === 500 ? "Internal server error" : error.message ?? "Internal server error",
+      });
     }
   });
 }

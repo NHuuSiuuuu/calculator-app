@@ -1,9 +1,18 @@
 import { chunkText } from "../chunkText.js";
 
-const ALLOWED_TYPES = new Set(["text/plain", "text/markdown"]);
+const ALLOWED_TYPES_BY_EXTENSION = {
+  ".txt": new Set(["", "text/plain", "application/octet-stream"]),
+  ".md": new Set(["", "text/plain", "text/markdown", "application/octet-stream"]),
+};
+
+function isAllowedFile({ filename, contentType }) {
+  const extension = String(filename ?? "").toLowerCase().match(/\.[^.]+$/)?.[0];
+  const allowedTypes = ALLOWED_TYPES_BY_EXTENSION[extension];
+  return Boolean(allowedTypes?.has(String(contentType ?? "").toLowerCase()));
+}
 
 export async function handleDocumentUpload({ user, file, repository, openAiClient }) {
-  if (!ALLOWED_TYPES.has(file.contentType)) {
+  if (!isAllowedFile(file)) {
     const error = new Error("Only .txt and .md files are supported");
     error.statusCode = 400;
     throw error;
@@ -18,7 +27,9 @@ export async function handleDocumentUpload({ user, file, repository, openAiClien
   try {
     const chunks = chunkText(file.text);
     if (chunks.length === 0) {
-      throw new Error("Uploaded document is empty");
+      const error = new Error("Uploaded document is empty");
+      error.statusCode = 400;
+      throw error;
     }
 
     const chunksWithEmbeddings = [];

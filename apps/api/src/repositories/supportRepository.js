@@ -90,6 +90,16 @@ export function createSupportRepository(supabase) {
       return data;
     },
 
+    async getConversation(userId, conversationId) {
+      const { data, error } = await supabase.from("support_conversations")
+        .select("id")
+        .eq("id", conversationId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      raiseIfError(error);
+      return data;
+    },
+
     async getMessages(userId, conversationId) {
       const { data: conversation, error: conversationError } = await supabase.from("support_conversations")
         .select("id")

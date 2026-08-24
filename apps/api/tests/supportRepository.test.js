@@ -55,3 +55,34 @@ test("repository maps vector matches into source objects", async () => {
     similarity: 0.9,
   }]);
 });
+
+test("repository gets a conversation scoped by its owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  const conversation = await repository.getConversation("user-1", "conv-1");
+
+  assert.deepEqual(conversation, { id: "conv-1" });
+  assert.deepEqual(calls, [
+    ["select", "id"],
+    ["eq", "id", "conv-1"],
+    ["eq", "user_id", "user-1"],
+  ]);
+});

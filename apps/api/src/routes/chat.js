@@ -12,9 +12,17 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
     throw error;
   }
 
-  const conversation = body.conversationId
-    ? { id: body.conversationId }
-    : await repository.createConversation(user.id, titleFromMessage(message));
+  let conversation;
+  if (body.conversationId) {
+    conversation = await repository.getConversation(user.id, body.conversationId);
+    if (!conversation) {
+      const error = new Error("Conversation not found");
+      error.statusCode = 404;
+      throw error;
+    }
+  } else {
+    conversation = await repository.createConversation(user.id, titleFromMessage(message));
+  }
 
   await repository.insertMessage({
     conversationId: conversation.id,
