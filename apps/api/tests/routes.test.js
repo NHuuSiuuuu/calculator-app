@@ -293,6 +293,34 @@ test("HTTP document endpoints return an auth error when admin verification fails
   });
 });
 
+test("HTTP chat invokes requireUser and returns an unauthenticated rejection", async () => {
+  let requireUserCalls = 0;
+  await withApiServer({
+    authService: {
+      async requireUser(request) {
+        requireUserCalls += 1;
+        assert.equal(request.headers.authorization, undefined);
+        const error = new Error("Missing bearer token");
+        error.statusCode = 401;
+        throw error;
+      },
+    },
+    repository: {},
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "What is the refund window?" }),
+    });
+
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing bearer token" });
+  });
+
+  assert.equal(requireUserCalls, 1);
+});
+
 test("HTTP server hides unclassified internal error details", async () => {
   await withApiServer({
     authService: {
