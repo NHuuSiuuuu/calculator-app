@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { createLatestRequestGuard } from "./latestRequestGuard.js";
 import { createSupportApi } from "./supportApi.js";
 
 function responseItems(payload, key) {
@@ -20,6 +21,10 @@ export function AiSupportPanel({ session, supportApi }) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const conversationRequestGuard = useRef(null);
+  if (!conversationRequestGuard.current) {
+    conversationRequestGuard.current = createLatestRequestGuard();
+  }
   const api = useMemo(() => supportApi ?? createSupportApi({
     getAccessToken: () => session?.accessToken ?? "",
   }), [session, supportApi]);
@@ -57,14 +62,17 @@ export function AiSupportPanel({ session, supportApi }) {
   }, [api, session]);
 
   async function selectConversation(conversationId) {
+    const request = conversationRequestGuard.current.begin();
     setSelectedConversationId(conversationId);
     setError("");
     setStatusMessage("Loading conversation...");
     try {
       const payload = await api.listMessages(conversationId);
+      if (!conversationRequestGuard.current.isCurrent(request)) return;
       setMessages(responseItems(payload, "messages"));
       setStatusMessage("");
     } catch (nextError) {
+      if (!conversationRequestGuard.current.isCurrent(request)) return;
       setError(nextError.message);
       setStatusMessage("");
     }
@@ -79,7 +87,8 @@ export function AiSupportPanel({ session, supportApi }) {
     setStatusMessage("Sending message...");
     setIsSending(true);
     setInput("");
-    setMessages((current) => [...current, { id: messageId("user"), role: "user", content: message }]);
+    const optimisticMessage = { id: messageId("user"), role: "user", content: message };
+    setMessages((current) => [...current, optimisticMessage]);
 
     try {
       const result = await api.sendMessage({
@@ -97,6 +106,7 @@ export function AiSupportPanel({ session, supportApi }) {
       setConversations(responseItems(conversationsPayload, "conversations"));
       setStatusMessage("");
     } catch (nextError) {
+      setMessages((current) => current.filter((existing) => existing.id !== optimisticMessage.id));
       setError(nextError.message);
       setStatusMessage("");
     } finally {
