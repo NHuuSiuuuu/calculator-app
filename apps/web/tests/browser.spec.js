@@ -83,6 +83,47 @@ test("signed-out users see auth form instead of todos", async ({ page }) => {
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
 });
 
+test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {
+  let conversationRequestCount = 0;
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+  await page.route("**/api/conversations", async (route) => {
+    conversationRequestCount += 1;
+    if (conversationRequestCount === 1) {
+      await route.fulfill({ json: { conversations: [] } });
+      return;
+    }
+    await route.fulfill({ status: 500, json: { error: "Conversation refresh failed" } });
+  });
+  await page.route("**/api/documents", (route) => route.fulfill({ json: { documents: [] } }));
+  await page.route("**/api/chat", (route) => route.fulfill({
+    json: { conversationId: "conv-1", answer: "Answer", sources: [] },
+  }));
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Support question").fill("Hello");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("Hello", { exact: true })).toBeVisible();
+  await expect(page.getByText("Answer", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
+});
+
 test("users can create an account before signing in", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {

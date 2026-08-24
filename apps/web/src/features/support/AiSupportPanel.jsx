@@ -102,11 +102,19 @@ export function AiSupportPanel({ session, supportApi }) {
         content: result.answer,
         sources: result.sources ?? [],
       }]);
+    } catch (nextError) {
+      setMessages((current) => current.filter((existing) => existing.id !== optimisticMessage.id));
+      setError(nextError.message);
+      setStatusMessage("");
+      setIsSending(false);
+      return;
+    }
+
+    try {
       const conversationsPayload = await api.listConversations();
       setConversations(responseItems(conversationsPayload, "conversations"));
       setStatusMessage("");
     } catch (nextError) {
-      setMessages((current) => current.filter((existing) => existing.id !== optimisticMessage.id));
       setError(nextError.message);
       setStatusMessage("");
     } finally {
