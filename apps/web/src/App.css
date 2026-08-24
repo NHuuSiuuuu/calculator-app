@@ -573,8 +573,18 @@ input {
 
 .game-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 40px);
+  justify-content: center;
+  align-items: center;
   gap: 8px;
+}
+
+.game-control {
+  width: 56px;
+  height: 40px;
+  min-height: 40px;
+  font-size: 1rem;
 }
 
 .game-control--up,
@@ -588,13 +598,6 @@ input {
 
 .game-control--right {
   grid-column: 3;
-}
-
-.game-control--attack {
-  grid-column: 2;
-  border-color: rgba(245, 158, 11, 0.45);
-  background: #fffbeb;
-  color: #92400e;
 }
 
 .game-attack-effect.is-active {

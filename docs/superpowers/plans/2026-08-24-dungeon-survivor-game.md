@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Version 1 includes player movement, enemy chase AI, manual attack, HP/damage, XP/level, coins, random spawn/map, game over, restart, high score, and desktop/mobile controls.
+- Version 1 includes player movement, enemy chase AI, auto fire, HP/damage, XP/level, coins, random spawn/map, game over, restart, high score, and desktop/mobile controls.
 - Shop is out of scope for version 1.
 - Game save data uses `localStorage`; no Supabase-backed game saves in version 1.
 - Existing calculator, todo, and auth behavior must remain unchanged.
@@ -47,7 +47,7 @@ test("game engine enemies chase the player and damage on contact", () => {
   assert.ok(next.player.hp < state.player.hp);
 });
 
-test("game engine attacks enemies, grants xp, coins, and levels", () => {
+test("game engine auto fires at enemies inside gun range", () => {
   const state = createGame({ seed: 3 });
   const enemy = { id: "enemy-test", x: state.player.x + 0.2, y: state.player.y, hp: 1, speed: 0, damage: 1, xpReward: 5, coinReward: 2 };
   const next = stepGame({ ...state, enemies: [enemy], player: { ...state.player, attackCooldownMs: 0 } }, {}, 300);
@@ -64,7 +64,7 @@ Expected: FAIL because `gameEngine.js` does not exist.
 
 - [x] **Step 3: Implement engine**
 
-Create a seedable RNG, map generation, movement bounds, enemy spawning, enemy chase, attack resolution, contact damage, XP/level, coins, score, and game-over status.
+Create a seedable RNG, map generation, movement bounds, enemy spawning, enemy chase, auto fire resolution, contact damage, XP/level, coins, score, and game-over status.
 
 - [x] **Step 4: Run GREEN**
 
@@ -115,7 +115,7 @@ Expected: PASS.
 
 **Interfaces:**
 - Consumes: `createGame`, `stepGame`, `restartGame`, `loadGameStats`, `saveGameStats`
-- Produces: visible heading `Dungeon Survivor`, canvas label `Dungeon Survivor map`, buttons `Up`, `Down`, `Left`, `Right`, `Restart run`
+- Produces: visible heading `Dungeon Survivor`, canvas label `Dungeon Survivor map`, D-pad buttons, auto fire status, and `Restart run`
 
 - [x] **Step 1: Write failing e2e test for game panel**
 

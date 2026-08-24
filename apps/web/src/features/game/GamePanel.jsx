@@ -12,7 +12,6 @@ const INPUT_KEYS = {
   KeyA: "left",
   ArrowRight: "right",
   KeyD: "right",
-  Space: "attack",
 };
 
 function drawGame(canvas, state) {
@@ -33,7 +32,7 @@ function drawGame(canvas, state) {
   }
 
   for (const effect of state.effects) {
-    if (effect.type === "slash") {
+    if (effect.type !== "coin") {
       continue;
     }
 
@@ -46,36 +45,82 @@ function drawGame(canvas, state) {
   }
 
   for (const enemy of state.enemies) {
+    const enemyX = (enemy.x + 0.5) * tileWidth;
+    const enemyY = (enemy.y + 0.5) * tileHeight;
+    const bodySize = tileSize * 0.7;
+
+    context.fillStyle = "#991b1b";
+    context.beginPath();
+    context.roundRect(enemyX - bodySize / 2, enemyY - bodySize / 2, bodySize, bodySize, 4);
+    context.fill();
     context.fillStyle = "#ef4444";
     context.beginPath();
-    context.arc((enemy.x + 0.5) * tileWidth, (enemy.y + 0.5) * tileHeight, tileSize * 0.38, 0, Math.PI * 2);
+    context.arc(enemyX, enemyY - bodySize * 0.24, tileSize * 0.18, 0, Math.PI * 2);
     context.fill();
+    context.fillStyle = "#fecaca";
+    context.fillRect(enemyX - tileSize * 0.16, enemyY - tileSize * 0.06, tileSize * 0.08, tileSize * 0.08);
+    context.fillRect(enemyX + tileSize * 0.08, enemyY - tileSize * 0.06, tileSize * 0.08, tileSize * 0.08);
   }
 
-  context.fillStyle = "#22c55e";
-  context.beginPath();
-  context.arc((state.player.x + 0.5) * tileWidth, (state.player.y + 0.5) * tileHeight, tileSize * 0.42, 0, Math.PI * 2);
-  context.fill();
+  const playerX = (state.player.x + 0.5) * tileWidth;
+  const playerY = (state.player.y + 0.5) * tileHeight;
+  const activeShot = state.effects.find((effect) => effect.type === "shot");
+  const aimX = activeShot ? activeShot.x - state.player.x : 1;
+  const aimY = activeShot ? activeShot.y - state.player.y : 0;
+  const aimLength = Math.hypot(aimX, aimY) || 1;
+  const unitX = aimX / aimLength;
+  const unitY = aimY / aimLength;
 
-  for (const effect of state.effects.filter((item) => item.type === "slash")) {
-    const centerX = (effect.x + 0.5) * tileWidth;
-    const centerY = (effect.y + 0.5) * tileHeight;
-    const radius = tileSize * 0.82;
+  context.fillStyle = "#0f766e";
+  context.beginPath();
+  context.roundRect(playerX - tileSize * 0.24, playerY - tileSize * 0.08, tileSize * 0.48, tileSize * 0.46, 4);
+  context.fill();
+  context.fillStyle = "#fde68a";
+  context.beginPath();
+  context.arc(playerX, playerY - tileSize * 0.24, tileSize * 0.22, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = "#111827";
+  context.lineWidth = Math.max(3, tileSize * 0.1);
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(playerX + unitX * tileSize * 0.1, playerY - tileSize * 0.02 + unitY * tileSize * 0.1);
+  context.lineTo(playerX + unitX * tileSize * 0.65, playerY - tileSize * 0.02 + unitY * tileSize * 0.65);
+  context.stroke();
+
+  for (const effect of state.effects.filter((item) => item.type === "shot")) {
+    const fromX = (effect.fromX + 0.5) * tileWidth;
+    const fromY = (effect.fromY + 0.5) * tileHeight;
+    const targetX = (effect.x + 0.5) * tileWidth;
+    const targetY = (effect.y + 0.5) * tileHeight;
 
     context.save();
     context.globalAlpha = 1;
-    context.strokeStyle = "#f59e0b";
-    context.lineWidth = Math.max(6, tileSize * 0.2);
+    context.strokeStyle = "#facc15";
+    context.lineWidth = Math.max(4, tileSize * 0.14);
     context.lineCap = "round";
     context.beginPath();
-    context.arc(centerX, centerY, radius, -0.75 * Math.PI, 0.15 * Math.PI);
+    context.moveTo(fromX, fromY);
+    context.lineTo(targetX, targetY);
     context.stroke();
-    context.strokeStyle = "#fde68a";
-    context.lineWidth = Math.max(2, tileSize * 0.06);
+    context.fillStyle = "#f97316";
     context.beginPath();
-    context.arc(centerX, centerY, radius * 0.72, -0.72 * Math.PI, 0.05 * Math.PI);
-    context.stroke();
+    context.arc(fromX, fromY, tileSize * 0.18, 0, Math.PI * 2);
+    context.fill();
     context.restore();
+  }
+
+  for (const effect of state.effects.filter((item) => item.type === "hit")) {
+    const centerX = (effect.x + 0.5) * tileWidth;
+    const centerY = (effect.y + 0.5) * tileHeight;
+
+    context.strokeStyle = "#fde047";
+    context.lineWidth = Math.max(2, tileSize * 0.08);
+    context.beginPath();
+    context.moveTo(centerX - tileSize * 0.28, centerY);
+    context.lineTo(centerX + tileSize * 0.28, centerY);
+    context.moveTo(centerX, centerY - tileSize * 0.28);
+    context.lineTo(centerX, centerY + tileSize * 0.28);
+    context.stroke();
   }
 
   context.strokeStyle = "rgba(34, 197, 94, 0.35)";
@@ -90,22 +135,21 @@ function formatPosition(player) {
 }
 
 function getAttackStatus(game) {
-  if (game.effects.some((effect) => effect.type === "slash")) {
-    return "Slash!";
+  if (game.effects.some((effect) => effect.type === "shot")) {
+    return "Firing";
   }
 
-  return game.player.attackCooldownMs > 0 ? "Cooldown" : "Ready";
+  return game.player.attackCooldownMs > 0 ? "Reloading" : "Auto fire";
 }
 
 export function GamePanel() {
   const [game, setGame] = useState(() => createGame({ seed: Date.now() }));
   const [stats, setStats] = useState(() => loadGameStats());
   const canvasRef = useRef(null);
-  const inputRef = useRef({ up: false, down: false, left: false, right: false, attack: false });
+  const inputRef = useRef({ up: false, down: false, left: false, right: false });
   const gameRef = useRef(game);
   const lastFrameRef = useRef(0);
   const savedGameOverRef = useRef(false);
-  const attackTimeoutRef = useRef(0);
 
   useEffect(() => {
     gameRef.current = game;
@@ -149,7 +193,6 @@ export function GamePanel() {
     window.addEventListener("keyup", handleKeyUp);
 
     return () => {
-      clearTimeout(attackTimeoutRef.current);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
@@ -179,16 +222,8 @@ export function GamePanel() {
     inputRef.current = { ...inputRef.current, [direction]: isPressed };
   }
 
-  function triggerAttack() {
-    clearTimeout(attackTimeoutRef.current);
-    inputRef.current = { ...inputRef.current, attack: true };
-    attackTimeoutRef.current = window.setTimeout(() => {
-      inputRef.current = { ...inputRef.current, attack: false };
-    }, 140);
-  }
-
   function handleRestart() {
-    inputRef.current = { up: false, down: false, left: false, right: false, attack: false };
+    inputRef.current = { up: false, down: false, left: false, right: false };
     savedGameOverRef.current = false;
     lastFrameRef.current = 0;
     setGame(restartGame({ seed: Date.now() }));
@@ -233,7 +268,7 @@ export function GamePanel() {
         <span data-testid="player-position">{formatPosition(game.player)}</span>
         <span>{game.enemies.length} enemies</span>
         <span
-          className={getAttackStatus(game) === "Slash!" ? "game-attack-effect is-active" : "game-attack-effect"}
+          className={getAttackStatus(game) === "Firing" ? "game-attack-effect is-active" : "game-attack-effect"}
           data-testid="attack-effect"
         >
           {getAttackStatus(game)}
@@ -244,45 +279,42 @@ export function GamePanel() {
         <button
           className="game-control game-control--up"
           type="button"
+          aria-label="Move up"
           onPointerDown={() => setTouchDirection("up", true)}
           onPointerUp={() => setTouchDirection("up", false)}
           onPointerLeave={() => setTouchDirection("up", false)}
         >
-          Up
+          ↑
         </button>
         <button
           className="game-control game-control--left"
           type="button"
+          aria-label="Move left"
           onPointerDown={() => setTouchDirection("left", true)}
           onPointerUp={() => setTouchDirection("left", false)}
           onPointerLeave={() => setTouchDirection("left", false)}
         >
-          Left
+          ←
         </button>
         <button
           className="game-control game-control--right"
           type="button"
+          aria-label="Move right"
           onPointerDown={() => setTouchDirection("right", true)}
           onPointerUp={() => setTouchDirection("right", false)}
           onPointerLeave={() => setTouchDirection("right", false)}
         >
-          Right
-        </button>
-        <button
-          className="game-control game-control--attack"
-          type="button"
-          onClick={triggerAttack}
-        >
-          Attack
+          →
         </button>
         <button
           className="game-control game-control--down"
           type="button"
+          aria-label="Move down"
           onPointerDown={() => setTouchDirection("down", true)}
           onPointerUp={() => setTouchDirection("down", false)}
           onPointerLeave={() => setTouchDirection("down", false)}
         >
-          Down
+          ↓
         </button>
       </div>
     </section>

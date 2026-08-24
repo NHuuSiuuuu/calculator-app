@@ -10,7 +10,7 @@ Version 1 is a focused survival loop:
 
 - Player moves around a random tile map.
 - Enemies spawn over time and chase the player.
-- Player attacks enemies in range when the user presses attack.
+- Player automatically fires at enemies inside gun range.
 - Player has HP and takes contact damage.
 - Enemies grant XP and coins when defeated.
 - XP increases the player level.
@@ -35,13 +35,12 @@ The user opens the `Game` tab and sees a compact game surface with HUD stats abo
 Desktop controls:
 
 - `WASD` and arrow keys move the player.
-- `Space` attacks nearby enemies.
 - Restart button starts a new run after game over.
 
 Mobile controls:
 
-- Direction buttons below the game surface.
-- Attack button below the game surface.
+- D-pad direction control below the game surface.
+- Auto fire status below the game surface.
 - Restart button remains accessible.
 
 ## Game Model
@@ -96,7 +95,7 @@ Unit tests:
 
 - Player movement stays inside map bounds.
 - Enemy moves toward player.
-- Player attack damages and removes enemies in range.
+- Player auto fire damages and removes enemies inside gun range.
 - Enemy contact damage reduces HP.
 - XP and level increase after kills.
 - Coin and high-score values persist through storage helpers.
@@ -106,7 +105,7 @@ E2E tests:
 - `Game` tab is visible.
 - Game canvas/surface renders on desktop and mobile.
 - Keyboard movement changes player position.
-- Mobile direction buttons are visible.
+- Mobile D-pad controls are visible.
 - Restart returns game to a running state after game over.
 
 ## Out of Scope for v1

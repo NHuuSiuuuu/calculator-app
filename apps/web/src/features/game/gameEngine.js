@@ -80,7 +80,7 @@ function createPlayer() {
     hp: 20,
     maxHp: 20,
     speed: 7.5,
-    attackRange: 1.3,
+    attackRange: 5,
     attackDamage: 2,
     attackCooldownMs: 0,
     xp: 0,
@@ -161,7 +161,13 @@ function moveEnemies(enemies, player, map, deltaSeconds) {
   });
 }
 
-function applyCombat(player, enemies, input, deltaMs) {
+function findNearestEnemyInRange(player, enemies) {
+  return enemies
+    .filter((enemy) => distance(player, enemy) <= player.attackRange)
+    .sort((first, second) => distance(player, first) - distance(player, second))[0];
+}
+
+function applyCombat(player, enemies, deltaMs) {
   let nextPlayer = {
     ...player,
     attackCooldownMs: Math.max(0, player.attackCooldownMs - deltaMs),
@@ -169,20 +175,24 @@ function applyCombat(player, enemies, input, deltaMs) {
   let nextEnemies = enemies;
   const effects = [];
 
-  if (input.attack && nextPlayer.attackCooldownMs === 0) {
-    const target = enemies.find((enemy) => distance(nextPlayer, enemy) <= nextPlayer.attackRange);
-    nextPlayer = { ...nextPlayer, attackCooldownMs: 420 };
-    effects.push({
-      type: "slash",
-      x: target?.x ?? nextPlayer.x,
-      y: target?.y ?? nextPlayer.y,
-      ttlMs: 320,
-    });
+  if (nextPlayer.attackCooldownMs === 0) {
+    const target = findNearestEnemyInRange(nextPlayer, enemies);
 
     if (target) {
+      nextPlayer = { ...nextPlayer, attackCooldownMs: 420 };
+      effects.push({
+        type: "shot",
+        fromX: nextPlayer.x,
+        fromY: nextPlayer.y,
+        x: target.x,
+        y: target.y,
+        ttlMs: 180,
+      });
+
       nextEnemies = enemies.map((enemy) => (
         enemy.id === target.id ? { ...enemy, hp: enemy.hp - nextPlayer.attackDamage } : enemy
       ));
+      effects.push({ type: "hit", x: target.x, y: target.y, ttlMs: 180 });
     }
   }
 
@@ -234,7 +244,7 @@ export function stepGame(state, input = {}, deltaMs = 16) {
   const rng = state._rng ?? createRng(state.seed);
   const movedPlayer = movePlayer(state, input, deltaSeconds);
   const movedEnemies = moveEnemies(state.enemies, movedPlayer, state.map, deltaSeconds);
-  const combat = applyCombat(movedPlayer, movedEnemies, input, safeDeltaMs);
+  const combat = applyCombat(movedPlayer, movedEnemies, safeDeltaMs);
   const elapsedMs = state.run.elapsedMs + safeDeltaMs;
   const score = Math.floor(elapsedMs / 100) + combat.player.level * 10 + combat.player.coins * 5;
   let spawnTimerMs = state.run.spawnTimerMs - safeDeltaMs;
