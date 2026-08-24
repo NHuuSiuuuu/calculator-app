@@ -65,6 +65,9 @@ test("handleChatRequest stores messages and returns sources", async () => {
         messages.push(message);
         return { id: `msg-${messages.length}`, ...message };
       },
+      async hasReadyDocuments() {
+        return true;
+      },
       async matchChunks() {
         return [{ chunkId: "chunk-1", filename: "policy.md", content: "Refunds are allowed within 7 days.", similarity: 0.88 }];
       },
@@ -130,6 +133,9 @@ test("handleChatRequest returns the no-context answer when retrieval is empty", 
       async insertMessage(message) {
         messages.push(message);
       },
+      async hasReadyDocuments() {
+        return true;
+      },
       async matchChunks() {
         return [];
       },
@@ -145,6 +151,40 @@ test("handleChatRequest returns the no-context answer when retrieval is empty", 
   });
 
   assert.equal(result.answer, "Em không tìm thấy thông tin phù hợp trong tài liệu công ty đã upload, nên chưa thể trả lời chắc chắn câu hỏi này.");
+  assert.deepEqual(result.sources, []);
+  assert.equal(messages[1].role, "assistant");
+});
+
+test("handleChatRequest distinguishes an empty knowledge base from irrelevant retrieval", async () => {
+  const messages = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "What is the refund window?" },
+    repository: {
+      async createConversation() {
+        return { id: "conv-1" };
+      },
+      async insertMessage(message) {
+        messages.push(message);
+      },
+      async hasReadyDocuments() {
+        return false;
+      },
+      async matchChunks() {
+        throw new Error("should not retrieve without documents");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed without documents");
+      },
+      async createChatAnswer() {
+        throw new Error("should not generate without documents");
+      },
+    },
+  });
+
+  assert.match(result.answer, /chưa có tài liệu công ty/i);
   assert.deepEqual(result.sources, []);
   assert.equal(messages[1].role, "assistant");
 });
@@ -177,11 +217,13 @@ test("handleDocumentUpload rejects a non-text filename despite a text MIME type"
 });
 
 test("handleDocumentUpload accepts a markdown extension with a generic MIME type", async () => {
+  const documents = [];
   const result = await handleDocumentUpload({
     user: { id: "admin-1" },
     file: { filename: "HANDBOOK.MD", contentType: "application/octet-stream", text: "Refunds are allowed within 7 days." },
     repository: {
-      async createDocument() {
+      async createDocument(input) {
+        documents.push(input);
         return { id: "doc-1" };
       },
       async insertChunks() {},
@@ -198,6 +240,34 @@ test("handleDocumentUpload accepts a markdown extension with a generic MIME type
   });
 
   assert.equal(result.status, "ready");
+  assert.equal(documents[0].contentType, "text/markdown");
+});
+
+test("handleChatRequest rejects an oversized message before creating a conversation", async () => {
+  const calls = [];
+
+  await assert.rejects(
+    () => handleChatRequest({
+      user: { id: "user-1" },
+      body: { message: "x".repeat(4001) },
+      repository: {
+        async createConversation() {
+          calls.push("createConversation");
+        },
+        async insertMessage() {
+          calls.push("insertMessage");
+        },
+      },
+      openAiClient: {
+        async createEmbedding() {
+          calls.push("createEmbedding");
+        },
+      },
+    }),
+    (error) => error.statusCode === 400 && error.message === "Message must be 4000 characters or fewer",
+  );
+
+  assert.deepEqual(calls, []);
 });
 
 test("handleDocumentUpload reports an empty document as a client error", async () => {
@@ -290,6 +360,28 @@ test("HTTP document endpoints return an auth error when admin verification fails
 
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), { error: "Admin role required" });
+  });
+});
+
+test("HTTP current-user endpoint returns the authoritative profile role", async () => {
+  await withApiServer({
+    authService: {
+      async requireUserWithRole(request) {
+        assert.equal(request.headers.authorization, "Bearer user-token");
+        return { id: "user-1", email: "user@example.com", role: "user" };
+      },
+    },
+    repository: {},
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/me`, {
+      headers: { authorization: "Bearer user-token" },
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      user: { id: "user-1", email: "user@example.com", role: "user" },
+    });
   });
 });
 

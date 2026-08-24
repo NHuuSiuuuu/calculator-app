@@ -109,6 +109,9 @@ test("support keeps completed chat messages when conversation refresh fails", as
     }
     await route.fulfill({ status: 500, json: { error: "Conversation refresh failed" } });
   });
+  await page.route("**/api/me", (route) => route.fulfill({
+    json: { user: { id: "user-1", role: "admin" } },
+  }));
   await page.route("**/api/documents", (route) => route.fulfill({ json: { documents: [] } }));
   await page.route("**/api/chat", (route) => route.fulfill({
     json: { conversationId: "conv-1", answer: "Answer", sources: [] },
@@ -163,11 +166,16 @@ test("signed-in users can chat with AI Support and see sources", async ({ page }
     };
 
     window.fetch = async (url, options) => {
+      window.supportRequests ??= [];
+      window.supportRequests.push(String(url));
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
       if (String(url).endsWith("/api/conversations")) {
-        return { ok: true, json: async () => [] };
+        return { ok: true, json: async () => ({ conversations: [] }) };
       }
       if (String(url).endsWith("/api/documents")) {
-        return { ok: true, json: async () => [{ id: "doc-1", filename: "policy.md", status: "ready", chunk_count: 2 }] };
+        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
       }
       if (String(url).endsWith("/api/chat")) {
         return {
@@ -190,6 +198,126 @@ test("signed-in users can chat with AI Support and see sources", async ({ page }
 
   await expect(page.getByText("Chính sách hoàn tiền là 7 ngày.")).toBeVisible();
   await expect(page.getByText("policy.md")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
+});
+
+test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "admin-token",
+      user: { id: "admin-1", email: "admin@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return {
+          ok: true,
+          json: async () => ({
+            documents: [{
+              id: "doc-1",
+              filename: "broken.md",
+              status: "failed",
+              chunk_count: 0,
+              error_message: "Embedding failed",
+              created_at: "2026-08-24T10:15:00.000Z",
+            }],
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const documents = page.getByRole("region", { name: "Company documents" });
+  await expect(documents.getByText("broken.md")).toBeVisible();
+  await expect(documents.getByText("failed", { exact: true })).toBeVisible();
+  await expect(documents.getByText("0 chunks", { exact: true })).toBeVisible();
+  await expect(documents.getByText("2026-08-24 10:15 UTC", { exact: true })).toBeVisible();
+  await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
+});
+
+test("support discards a stale conversation response after the account changes", async ({ page }) => {
+  await page.addInitScript(() => {
+    const firstSession = {
+      access_token: "token-user-1",
+      user: { id: "user-1", email: "one@example.com" },
+    };
+    const secondSession = {
+      access_token: "token-user-2",
+      user: { id: "user-2", email: "two@example.com" },
+    };
+    let authListener;
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: firstSession }, error: null };
+        },
+        onAuthStateChange(listener) {
+          authListener = listener;
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+    window.switchSupportAccount = () => authListener("SIGNED_IN", secondSession);
+
+    window.fetch = async (url, options = {}) => {
+      const token = options.headers?.authorization;
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: token.endsWith("user-2") ? "user-2" : "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversations: token.endsWith("user-2") ? [] : [{ id: "conv-user-1", title: "Private user one chat" }],
+          }),
+        };
+      }
+      if (String(url).includes("/api/conversations/conv-user-1/messages")) {
+        return new Promise((resolve) => {
+          window.resolveOldConversation = () => resolve({
+            ok: true,
+            json: async () => ({
+              messages: [{ id: "message-user-1", role: "assistant", content: "Private answer for user one" }],
+            }),
+          });
+        });
+      }
+      return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Private user one chat" }).click();
+  await page.evaluate(() => window.switchSupportAccount());
+  await page.evaluate(() => window.resolveOldConversation());
+
+  await expect(page.getByText("Private user one chat", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Private answer for user one", { exact: true })).toHaveCount(0);
 });
 
 test("users can create an account before signing in", async ({ page }) => {

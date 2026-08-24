@@ -63,13 +63,22 @@ export function createSupportRepository(supabase) {
         match_count: count,
       });
       raiseIfError(error);
-      return data.map((row) => ({
+      return (data ?? []).map((row) => ({
         chunkId: row.chunk_id,
         documentId: row.document_id,
         content: row.content,
         filename: row.filename,
         similarity: row.similarity,
       }));
+    },
+
+    async hasReadyDocuments() {
+      const { data, error } = await supabase.from("support_documents")
+        .select("id")
+        .eq("status", "ready")
+        .limit(1);
+      raiseIfError(error);
+      return (data ?? []).length > 0;
     },
 
     async createConversation(userId, title) {
@@ -105,7 +114,7 @@ export function createSupportRepository(supabase) {
         .select("id")
         .eq("id", conversationId)
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
       raiseIfError(conversationError);
       if (!conversation) {
         return [];
@@ -116,7 +125,29 @@ export function createSupportRepository(supabase) {
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
       raiseIfError(error);
-      return data;
+      const messages = data ?? [];
+      const chunkIds = [...new Set(messages.flatMap((message) => message.retrieved_chunk_ids ?? []))];
+      if (chunkIds.length === 0) {
+        return messages.map((message) => ({ ...message, sources: [] }));
+      }
+
+      const { data: chunks, error: chunksError } = await supabase.from("support_document_chunks")
+        .select("id, support_documents(filename)")
+        .in("id", chunkIds);
+      raiseIfError(chunksError);
+      const sourceByChunkId = new Map((chunks ?? []).map((chunk) => {
+        const document = Array.isArray(chunk.support_documents)
+          ? chunk.support_documents[0]
+          : chunk.support_documents;
+        return [chunk.id, { chunkId: chunk.id, filename: document?.filename ?? "Unknown document" }];
+      }));
+
+      return messages.map((message) => ({
+        ...message,
+        sources: (message.retrieved_chunk_ids ?? [])
+          .map((chunkId) => sourceByChunkId.get(chunkId))
+          .filter(Boolean),
+      }));
     },
 
     async insertMessage({ conversationId, role, content, retrievedChunkIds = [] }) {
@@ -127,6 +158,10 @@ export function createSupportRepository(supabase) {
         retrieved_chunk_ids: retrievedChunkIds,
       }));
       raiseIfError(error);
+      const { error: conversationError } = await supabase.from("support_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+      raiseIfError(conversationError);
       return data;
     },
   };

@@ -1,6 +1,10 @@
 create extension if not exists "pgcrypto";
 create extension if not exists vector with schema extensions;
 
+alter table public.profiles
+add column if not exists role text not null default 'user'
+check (role in ('admin', 'user'));
+
 create table if not exists public.support_documents (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,

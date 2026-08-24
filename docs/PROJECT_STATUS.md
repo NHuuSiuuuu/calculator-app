@@ -4,16 +4,16 @@
 
 - Project: Calculator App
 - Repository: `https://github.com/NHuuSiuuuu/calculator-app`
-- Active branch: `feature/react-auth-migration`
-- App platform: React + Vite
+- Active branch: `feature/ai-rag-support-system`
+- App platform: React + Vite frontend with Node.js API
 - Web app path: `apps/web`
 - Database migrations path: `supabase/migrations`
-- Recommended deploy target: Vercel
+- Recommended deploy targets: Vercel frontend and a Node.js API host
 
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
-- Status: planned implementation
+- Status: implemented; final review fixes applied
 - Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
 
 ## Implemented
@@ -25,13 +25,17 @@
 - Supabase migration with `user_id`, existing-table upgrade handling, and RLS scoped to `auth.uid()`
 - Auth-gated Todo UI
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
+- Authenticated AI Support chat with grounded OpenAI answers
+- Admin `.txt` and `.md` ingestion with pgvector embeddings and status metadata
+- User-owned conversation history with reconstructed source metadata and recency ordering
 
 ## Required Supabase Setup
 
-Run this SQL file in Supabase SQL Editor:
+Run these SQL files in order in Supabase SQL Editor:
 
 ```text
 supabase/migrations/0001_user_owned_todos.sql
+supabase/migrations/0002_ai_rag_support.sql
 ```
 
 Set these frontend environment variables:
@@ -39,9 +43,10 @@ Set these frontend environment variables:
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+VITE_SUPPORT_API_URL
 ```
 
-Do not use service role keys or database passwords in frontend code.
+The API also requires `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. Do not use service role keys or database passwords in frontend code.
 
 If the database already contains todos from the earlier anonymous demo, the migration removes rows without `user_id` before enforcing per-user ownership.
 
@@ -56,15 +61,16 @@ npm run build
 
 ## Deployment Notes
 
-Use Vercel with:
+Use Vercel for `apps/web` with:
 
 - Root Directory: `apps/web`
 - Build Command: `npm run build`
 - Output Directory: `dist`
 
+Deploy `apps/api` to a Node.js host with `npm --workspace @calculator-app/api start`, then configure its HTTPS URL as `VITE_SUPPORT_API_URL` in Vercel.
+
 ## Roadmap
 
-- Next: final review for React/Auth migration
 - Next: push branch and open PR
 - Later: add password reset if needed
-- Later: add server/API only when secret server-side logic is needed
+- Later: add rate limiting and richer ingestion formats if needed

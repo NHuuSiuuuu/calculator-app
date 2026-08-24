@@ -141,6 +141,14 @@ export function createApiServer({ authService, repository, openAiClient }) {
         return;
       }
 
+      if (request.method === "GET" && url.pathname === "/api/me") {
+        const user = await authService.requireUserWithRole(request);
+        sendJson(response, 200, {
+          user: { id: user.id, email: user.email, role: user.role },
+        });
+        return;
+      }
+
       if (request.method === "POST" && url.pathname === "/api/chat") {
         const user = await authService.requireUser(request);
         const body = await readJsonBody(request);

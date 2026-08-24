@@ -19,7 +19,7 @@ test("requireAdmin rejects non-admin users", async () => {
       return {
         select() { return this; },
         eq() { return this; },
-        single() {
+        maybeSingle() {
           return Promise.resolve({ data: { role: "user" }, error: null });
         },
       };
@@ -29,5 +29,30 @@ test("requireAdmin rejects non-admin users", async () => {
   await assert.rejects(
     () => auth.requireAdmin({ headers: { authorization: "Bearer token" } }),
     /Admin role required/,
+  );
+});
+
+test("requireUserWithRole returns a signed-in user's profile role", async () => {
+  const auth = createAuthService({
+    auth: {
+      async getUser() {
+        return { data: { user: { id: "user-1", email: "u@example.com" } }, error: null };
+      },
+    },
+    from(table) {
+      assert.equal(table, "profiles");
+      return {
+        select() { return this; },
+        eq() { return this; },
+        maybeSingle() {
+          return Promise.resolve({ data: { role: "user" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(
+    await auth.requireUserWithRole({ headers: { authorization: "Bearer token" } }),
+    { id: "user-1", email: "u@example.com", token: "token", role: "user" },
   );
 });

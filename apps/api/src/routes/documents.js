@@ -5,8 +5,17 @@ const ALLOWED_TYPES_BY_EXTENSION = {
   ".md": new Set(["", "text/plain", "text/markdown", "application/octet-stream"]),
 };
 
+const STORED_TYPE_BY_EXTENSION = {
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+};
+
+function fileExtension(filename) {
+  return String(filename ?? "").toLowerCase().match(/\.[^.]+$/)?.[0];
+}
+
 function isAllowedFile({ filename, contentType }) {
-  const extension = String(filename ?? "").toLowerCase().match(/\.[^.]+$/)?.[0];
+  const extension = fileExtension(filename);
   const allowedTypes = ALLOWED_TYPES_BY_EXTENSION[extension];
   return Boolean(allowedTypes?.has(String(contentType ?? "").toLowerCase()));
 }
@@ -21,7 +30,7 @@ export async function handleDocumentUpload({ user, file, repository, openAiClien
   const document = await repository.createDocument({
     ownerId: user.id,
     filename: file.filename,
-    contentType: file.contentType,
+    contentType: STORED_TYPE_BY_EXTENSION[fileExtension(file.filename)],
   });
 
   try {

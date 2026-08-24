@@ -32,20 +32,30 @@ export function createAuthService(supabase) {
     };
   }
 
-  async function requireAdmin(request) {
+  async function requireUserWithRole(request) {
     const user = await requireUser(request);
     const { data, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (error || data?.role !== "admin") {
+    if (error) {
+      throw new Error(error.message ?? "Unable to load user role");
+    }
+
+    return { ...user, role: data?.role ?? "user" };
+  }
+
+  async function requireAdmin(request) {
+    const user = await requireUserWithRole(request);
+
+    if (user.role !== "admin") {
       throw httpError("Admin role required", 403);
     }
 
-    return { ...user, role: "admin" };
+    return user;
   }
 
-  return { requireUser, requireAdmin };
+  return { requireUser, requireUserWithRole, requireAdmin };
 }

@@ -27,6 +27,9 @@ export function createSupportApi({
   }
 
   return {
+    getCurrentUser() {
+      return request("/api/me");
+    },
     sendMessage({ conversationId, message }) {
       return request("/api/chat", {
         method: "POST",

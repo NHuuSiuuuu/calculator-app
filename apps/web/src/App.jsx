@@ -119,7 +119,7 @@ export function App() {
           aria-labelledby="tab-support"
           hidden={activeTab !== "support"}
         >
-          <AiSupportPanel session={session} />
+          <AiSupportPanel key={session?.user.id ?? "signed-out"} session={session} />
         </section>
       </div>
     </main>

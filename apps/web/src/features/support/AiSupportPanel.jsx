@@ -11,11 +11,18 @@ function messageId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function formatDocumentTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown upload time";
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
+
 export function AiSupportPanel({ session, supportApi }) {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [documents, setDocuments] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -34,6 +41,7 @@ export function AiSupportPanel({ session, supportApi }) {
       setConversations([]);
       setMessages([]);
       setDocuments([]);
+      setIsAdmin(false);
       setSelectedConversationId(null);
       return undefined;
     }
@@ -48,8 +56,14 @@ export function AiSupportPanel({ session, supportApi }) {
       }
 
       try {
-        const documentsPayload = await api.listDocuments();
-        if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
+        const currentUserPayload = await api.getCurrentUser();
+        if (!isCurrent) return;
+        const nextIsAdmin = currentUserPayload?.user?.role === "admin";
+        setIsAdmin(nextIsAdmin);
+        if (nextIsAdmin) {
+          const documentsPayload = await api.listDocuments();
+          if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
+        }
       } catch (nextError) {
         if (isCurrent) setError(nextError.message);
       }
@@ -210,13 +224,14 @@ export function AiSupportPanel({ session, supportApi }) {
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Ask about company documents"
+                maxLength={4000}
                 disabled={isSending}
               />
               <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
             </form>
           </section>
 
-          <section className="support-admin" aria-label="Company documents">
+          {isAdmin ? <section className="support-admin" aria-label="Company documents">
             <div className="support-admin__header">
               <h2>Tài liệu công ty</h2>
               <label className="support-upload">
@@ -226,9 +241,19 @@ export function AiSupportPanel({ session, supportApi }) {
             </div>
             <ul className="support-documents">
               {documents.length === 0 ? <li className="support-empty">No documents available.</li> : null}
-              {documents.map((document) => <li key={document.id}>{document.filename}</li>)}
+              {documents.map((document) => (
+                <li key={document.id} className="support-document">
+                  <strong>{document.filename}</strong>
+                  <div className="support-document__metadata">
+                    <span className={`support-document__status is-${document.status}`}>{document.status}</span>
+                    <span>{document.chunk_count} chunks</span>
+                    <time dateTime={document.created_at}>{formatDocumentTime(document.created_at)}</time>
+                  </div>
+                  {document.error_message ? <p className="support-document__error">{document.error_message}</p> : null}
+                </li>
+              ))}
             </ul>
-          </section>
+          </section> : null}
         </div>
       </div>
     </div>
