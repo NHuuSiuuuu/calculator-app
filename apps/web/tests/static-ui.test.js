@@ -36,3 +36,21 @@ test("Supabase migration upgrades existing todos to user-owned RLS", () => {
     assert.match(sql, new RegExp(`for ${operation}[\\s\\S]*?auth\\.uid\\(\\)`, "i"));
   }
 });
+
+test("Supabase migration creates profiles without storing passwords", () => {
+  const sql = readFileSync(
+    new URL("../../../supabase/migrations/0001_user_owned_todos.sql", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(sql, /create table if not exists public\.profiles/i);
+  assert.match(sql, /id uuid primary key references auth\.users\(id\) on delete cascade/i);
+  assert.match(sql, /email text not null/i);
+  assert.match(sql, /display_name text/i);
+  assert.match(sql, /alter table public\.profiles enable row level security/i);
+  assert.match(sql, /create or replace function public\.handle_new_user\(\)/i);
+  assert.match(sql, /after insert on auth\.users/i);
+  assert.match(sql, /for select[\s\S]*?using \(id = auth\.uid\(\)\)/i);
+  assert.match(sql, /for update[\s\S]*?using \(id = auth\.uid\(\)\)/i);
+  assert.doesNotMatch(sql, /public\.profiles[\s\S]*?(password|password_hash|encrypted_password)/i);
+});
