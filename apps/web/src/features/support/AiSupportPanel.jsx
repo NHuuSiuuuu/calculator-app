@@ -291,8 +291,7 @@ export function AiSupportPanel({ session, supportApi }) {
         <div className="support-messages" aria-live="polite">
           {messages.length === 0 ? (
             <div className="support-empty-state">
-              <h1>AI Support</h1>
-              <p>Ask a question about company documents.</p>
+              <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
             </div>
           ) : null}
           {messages.map((message) => (

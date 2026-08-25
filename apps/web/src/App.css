@@ -500,13 +500,53 @@ input {
 .support-panel.app-panel {
   padding: 0;
   overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  border-color: #1f1f1f;
+  background: #000000;
+  box-shadow: none;
+}
+
+.app-shell:has(.support-panel) {
+  align-items: stretch;
+  padding: 0;
+  background: #000000;
+  place-items: stretch;
+}
+
+.workspace:has(.support-panel) {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  min-height: 100vh;
+}
+
+.workspace:has(.support-panel) .app-tabs {
+  gap: 4px;
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid #1f1f1f;
+  background: #050505;
+}
+
+.workspace:has(.support-panel) .app-tab {
+  border-color: transparent;
+  background: transparent;
+  color: #a1a1aa;
+}
+
+.workspace:has(.support-panel) .app-tab.is-active {
+  border-color: #2f2f2f;
+  background: #1f1f1f;
+  color: #f4f4f5;
 }
 
 .support-chat-shell {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  min-height: min(760px, calc(100vh - 132px));
-  background: #ffffff;
+  grid-template-columns: minmax(220px, 248px) minmax(0, 1fr);
+  min-height: calc(100vh - 61px);
+  background: #000000;
+  color: #f4f4f5;
 }
 
 .support-sidebar {
@@ -514,11 +554,12 @@ input {
   align-content: start;
   gap: 12px;
   min-width: 0;
-  max-height: min(760px, calc(100vh - 132px));
+  max-height: calc(100vh - 61px);
   padding: 14px;
   overflow: auto;
-  border-right: 1px solid var(--color-border);
-  background: #f7f7f8;
+  border-right: 1px solid #1f1f1f;
+  background: #050505;
+  color: #f4f4f5;
 }
 
 .support-sidebar-section {
@@ -528,7 +569,7 @@ input {
 
 .support-sidebar-section--documents {
   padding-top: 12px;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid #1f1f1f;
 }
 
 .support-sidebar-header,
@@ -558,10 +599,15 @@ input {
   line-height: 1.15;
 }
 
+.support-sidebar .eyebrow {
+  color: #9ca3af;
+}
+
 .support-sidebar h2,
 .support-admin__header h2 {
   font-size: 0.84rem;
   line-height: 1.2;
+  color: #a1a1aa;
 }
 
 .support-chat-panel {
@@ -569,14 +615,15 @@ input {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
-  background: #ffffff;
+  background: #000000;
+  color: #f4f4f5;
 }
 
 .support-chat-header {
   min-height: 62px;
   padding: 14px 18px;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #151515;
+  background: #000000;
 }
 
 .support-chat-header h2 {
@@ -586,7 +633,7 @@ input {
 .support-chat-header p,
 .support-empty-state p {
   margin-top: 3px;
-  color: var(--color-text-muted);
+  color: #9ca3af;
   font-size: 0.84rem;
 }
 
@@ -603,10 +650,10 @@ input {
   width: 100%;
   min-height: 38px;
   padding: 8px 10px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #1f1f1f;
   border-radius: 8px;
-  background: #ffffff;
-  color: var(--color-text);
+  background: #1f1f1f;
+  color: #f4f4f5;
   cursor: pointer;
   font-size: 0.84rem;
   font-weight: 800;
@@ -614,16 +661,16 @@ input {
 }
 
 .support-new-chat:hover {
-  background: #eeeeee;
+  background: #2a2a2a;
 }
 
 .support-document {
   display: grid;
   gap: 6px;
   padding: 9px;
-  border: 1px solid var(--color-border);
+  border: 1px solid #27272a;
   border-radius: 8px;
-  background: #ffffff;
+  background: #111111;
   overflow-wrap: anywhere;
 }
 
@@ -631,7 +678,7 @@ input {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 10px;
-  color: var(--color-text-muted);
+  color: #a1a1aa;
   font-size: 0.76rem;
 }
 
@@ -641,7 +688,7 @@ input {
 }
 
 .support-document__status.is-ready {
-  color: #047857;
+  color: #34d399;
 }
 
 .support-document__status.is-failed,
@@ -662,7 +709,7 @@ input {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--color-text);
+  color: #e5e7eb;
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 700;
@@ -672,11 +719,11 @@ input {
 }
 
 .support-conversation.is-selected {
-  background: #ececf1;
+  background: #1f1f1f;
 }
 
 .support-conversation:hover {
-  background: #eeeeee;
+  background: #171717;
 }
 
 .support-notices {
@@ -695,13 +742,15 @@ input {
 .support-empty-state {
   align-self: center;
   justify-self: center;
-  max-width: 360px;
-  padding: 48px 20px;
+  max-width: 760px;
+  padding: 88px 20px 42px;
   text-align: center;
 }
 
 .support-empty-state h1 {
+  color: #f4f4f5;
   font-size: 1.45rem;
+  font-weight: 500;
   line-height: 1.2;
 }
 
@@ -712,7 +761,7 @@ input {
   padding: 0;
   background: transparent;
   overflow-wrap: anywhere;
-  color: var(--color-text);
+  color: #f4f4f5;
   font-size: 0.94rem;
   line-height: 1.55;
 }
@@ -722,8 +771,8 @@ input {
   width: fit-content;
   max-width: min(78%, 560px);
   padding: 10px 14px;
-  border-radius: 8px;
-  background: #f3f4f6;
+  border-radius: 18px;
+  background: #2f2f2f;
   line-height: 1.45;
 }
 
@@ -760,7 +809,7 @@ input {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: var(--color-text-muted);
+  background: #a1a1aa;
   animation: support-typing-dot 1s ease-in-out infinite;
 }
 
@@ -794,27 +843,33 @@ input {
   bottom: 0;
   width: min(100% - 36px, 760px);
   margin: 0 auto;
-  padding: 14px 0 18px;
-  background: #ffffff;
+  padding: 8px;
+  border: 1px solid #2f2f2f;
+  border-radius: 999px;
+  background: #202123;
 }
 
 .support-compose input {
   min-width: 0;
-  min-height: 50px;
+  min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--color-text);
-  box-shadow: 0 8px 22px rgba(23, 32, 51, 0.08);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #f4f4f5;
+  box-shadow: none;
+}
+
+.support-compose input::placeholder {
+  color: #9ca3af;
 }
 
 .support-compose button,
 .support-upload {
   min-height: 42px;
-  border: 1px solid var(--color-primary);
-  border-radius: 8px;
-  background: var(--color-primary);
+  border: 1px solid #ec4899;
+  border-radius: 999px;
+  background: #ec4899;
   color: #ffffff;
   cursor: pointer;
   font-size: 0.84rem;
@@ -822,14 +877,14 @@ input {
 }
 
 .support-compose button {
-  min-width: 54px;
+  min-width: 48px;
   padding: 0 14px;
 }
 
 .support-compose button:disabled {
-  border-color: var(--color-border);
-  background: var(--color-surface-subtle);
-  color: var(--color-text-muted);
+  border-color: #3f3f46;
+  background: #2f2f2f;
+  color: #8b8b8b;
   cursor: not-allowed;
 }
 
@@ -854,7 +909,7 @@ input {
 .support-message-status {
   min-height: 20px;
   margin: 10px 0 0;
-  color: var(--color-text-muted);
+  color: #a1a1aa;
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -865,7 +920,7 @@ input {
 
 .support-empty {
   margin: 0;
-  color: var(--color-text-muted);
+  color: #a1a1aa;
   font-size: 0.82rem;
 }
 

@@ -24,7 +24,12 @@ test("AI Support uses a ChatGPT-style chat shell", () => {
   assert.match(component, /className="support-chat-shell"/);
   assert.match(component, /className="support-chat-panel"/);
   assert.match(component, /className="support-sidebar-section support-sidebar-section--documents"/);
+  assert.match(component, /Khi bạn sẵn sàng là chúng ta có thể bắt đầu/);
   assert.match(css, /\.support-chat-shell\s*{/);
+  assert.match(css, /\.support-chat-shell\s*{[\s\S]*?background:\s*#000000/);
+  assert.match(css, /\.support-sidebar\s*{[\s\S]*?background:\s*#050505/);
+  assert.match(css, /\.support-compose\s*{[\s\S]*?border-radius:\s*999px/);
+  assert.match(css, /\.support-compose\s*{[\s\S]*?background:\s*#202123/);
   assert.match(css, /\.support-compose\s*{[\s\S]*?position:\s*sticky/);
 });
 
