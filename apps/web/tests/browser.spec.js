@@ -224,6 +224,7 @@ test("support can delete the selected conversation", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Refund policy" })).toHaveCount(0);
   await expect(page.getByText("Existing answer", { exact: true })).toHaveCount(0);
   await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
+  await expect(page.getByText("Conversation deleted.", { exact: true })).toHaveCount(0);
 });
 
 test("AI Support keeps the selected theme after reload", async ({ page }) => {

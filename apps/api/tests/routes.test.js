@@ -91,6 +91,75 @@ test("handleChatRequest stores messages and returns sources", async () => {
   assert.equal(messages[1].role, "assistant");
 });
 
+test("handleChatRequest generates a concise conversation title from the chat content", async () => {
+  const calls = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Tôi muốn biết quy định nghỉ phép năm của công ty đang áp dụng thế nào?" },
+    repository: {
+      async createConversation(userId, title) {
+        calls.push(["createConversation", userId, title]);
+        return { id: "conv-1" };
+      },
+      async insertMessage(message) {
+        calls.push(["insertMessage", message.role]);
+      },
+      async hasReadyDocuments() {
+        return false;
+      },
+      async updateConversationTitle(userId, conversationId, title) {
+        calls.push(["updateConversationTitle", userId, conversationId, title]);
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed without documents");
+      },
+      async createChatAnswer(messages) {
+        calls.push(["createChatAnswer", messages.at(-1).content]);
+        return "Quy định nghỉ phép năm";
+      },
+    },
+  });
+
+  assert.equal(result.conversationId, "conv-1");
+  assert.deepEqual(calls.at(-1), ["updateConversationTitle", "user-1", "conv-1", "Quy định nghỉ phép năm"]);
+  assert.notEqual(calls[0][2], "Quy định nghỉ phép năm");
+});
+
+test("handleChatRequest keeps the answer when generated conversation title fails", async () => {
+  let titleAttempts = 0;
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Nội quy công ty áp dụng ra sao?" },
+    repository: {
+      async createConversation() {
+        return { id: "conv-1" };
+      },
+      async insertMessage() {},
+      async hasReadyDocuments() {
+        return false;
+      },
+      async updateConversationTitle() {
+        throw new Error("should not update a failed title");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed without documents");
+      },
+      async createChatAnswer() {
+        titleAttempts += 1;
+        throw new Error("title model failed");
+      },
+    },
+  });
+
+  assert.equal(result.conversationId, "conv-1");
+  assert.match(result.answer, /chưa tìm thấy thông tin/i);
+  assert.equal(titleAttempts, 1);
+});
+
 test("handleChatRequest retrieves the top K chunks without a high similarity threshold", async () => {
   const retrievalCalls = [];
   const result = await handleChatRequest({

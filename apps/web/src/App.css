@@ -684,7 +684,7 @@ input {
   color: var(--support-text);
   cursor: pointer;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .support-theme-toggle:hover {
@@ -730,7 +730,7 @@ input {
 .support-conversations,
 .support-documents {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   margin: 10px 0 0;
   padding: 0;
   list-style: none;
@@ -746,7 +746,7 @@ input {
   color: var(--support-text);
   cursor: pointer;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -773,7 +773,7 @@ input {
 }
 
 .support-document__status {
-  font-weight: 800;
+  font-weight: 600;
   text-transform: capitalize;
 }
 
@@ -801,7 +801,6 @@ input {
 }
 
 .support-conversation-row + .support-conversation-row {
-  border-top: 1px solid var(--support-border);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
@@ -817,10 +816,46 @@ input {
   color: var(--support-text);
   cursor: pointer;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 500;
   text-align: left;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.support-conversation-title {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.support-conversation-title-text {
+  display: block;
+  min-width: 100%;
+  overflow: hidden;
+  padding-right: 24px;
+  text-overflow: ellipsis;
+}
+
+.support-conversation:hover .support-conversation-title {
+  max-width: none;
+  animation: support-conversation-title-scroll 8s linear infinite;
+}
+
+.support-conversation:hover .support-conversation-title-text {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+@keyframes support-conversation-title-scroll {
+  0%,
+  16% {
+    transform: translateX(0);
+  }
+
+  84%,
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .support-conversation-row.is-selected .support-conversation {
@@ -841,11 +876,10 @@ input {
   color: var(--support-text-muted);
   cursor: pointer;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .support-conversation-delete:hover {
-  border-color: var(--support-border);
   background: var(--support-action-bg);
   color: var(--support-text);
 }
@@ -922,7 +956,7 @@ input {
 }
 
 .support-message-content strong {
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .support-typing {
@@ -1003,7 +1037,7 @@ input {
   color: #ffffff;
   cursor: pointer;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .support-compose button {
@@ -1041,7 +1075,7 @@ input {
   margin: 10px 0 0;
   color: var(--support-text-muted);
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .support-message-status.is-error {

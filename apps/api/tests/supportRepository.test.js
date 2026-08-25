@@ -27,6 +27,36 @@ test("repository creates conversations scoped to a user", async () => {
   assert.deepEqual(calls[0], ["insert", "support_conversations", { user_id: "user-1", title: "Question title" }]);
 });
 
+test("repository updates conversation titles scoped to a user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      return {
+        update(row) {
+          calls.push(["update", table, row]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return Promise.resolve({ error: null });
+        },
+      };
+    },
+  });
+
+  await repository.updateConversationTitle(null, "conv-1", "A very useful generated conversation title");
+
+  assert.deepEqual(calls, [
+    ["update", "support_conversations", { title: "A very useful generated conversation title" }],
+    ["eq", "id", "conv-1"],
+    ["is", "user_id", null],
+  ]);
+});
+
 test("repository maps vector matches into source objects", async () => {
   const repository = createSupportRepository({
     rpc(name, args) {

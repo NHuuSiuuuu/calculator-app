@@ -112,6 +112,14 @@ export function createSupportRepository(supabase) {
       return data;
     },
 
+    async updateConversationTitle(userId, conversationId, title) {
+      const query = supabase.from("support_conversations")
+        .update({ title: title.slice(0, 120) })
+        .eq("id", conversationId);
+      const { error } = await scopeByNullableUser(query, userId);
+      raiseIfError(error);
+    },
+
     async listConversations(userId) {
       const query = supabase.from("support_conversations")
         .select("*");

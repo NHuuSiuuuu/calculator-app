@@ -14,6 +14,40 @@ function titleFromMessage(message) {
   return message.trim().replace(/\s+/g, " ").slice(0, 80);
 }
 
+function normalizeGeneratedTitle(title) {
+  return String(title ?? "")
+    .replace(/^["'“”‘’]+|["'“”‘’]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+async function generateConversationTitle({ userId, conversationId, message, answer, repository, openAiClient }) {
+  if (typeof repository.updateConversationTitle !== "function") return;
+
+  try {
+    const generatedTitle = normalizeGeneratedTitle(await openAiClient.createChatAnswer([
+      {
+        role: "system",
+        content: [
+          "Bạn đặt tiêu đề ngắn cho cuộc trò chuyện như ChatGPT.",
+          "Chỉ trả về tiêu đề, không giải thích, không dùng dấu ngoặc kép.",
+          "Tiêu đề dài tối đa 8 từ và phải mô tả nội dung chính của cuộc trò chuyện.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: `Người dùng: ${message}\nTrợ lý: ${answer}`,
+      },
+    ]));
+    if (generatedTitle) {
+      await repository.updateConversationTitle(userId, conversationId, generatedTitle);
+    }
+  } catch {
+    // Title generation is cosmetic; the chat response must remain usable.
+  }
+}
+
 export async function handleChatRequest({ user, body, repository, openAiClient }) {
   const message = String(body.message ?? "").trim();
   if (!message) {
@@ -28,6 +62,7 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
   }
 
   let conversation;
+  let createdConversation = false;
   if (body.conversationId) {
     conversation = await repository.getConversation(user.id, body.conversationId);
     if (!conversation) {
@@ -37,6 +72,7 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
     }
   } else {
     conversation = await repository.createConversation(user.id, titleFromMessage(message));
+    createdConversation = true;
   }
 
   await repository.insertMessage({
@@ -74,6 +110,17 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
     content: answer,
     retrievedChunkIds: chunks.map((chunk) => chunk.chunkId),
   });
+
+  if (createdConversation) {
+    await generateConversationTitle({
+      userId: user.id,
+      conversationId: conversation.id,
+      message,
+      answer,
+      repository,
+      openAiClient,
+    });
+  }
 
   return {
     conversationId: conversation.id,

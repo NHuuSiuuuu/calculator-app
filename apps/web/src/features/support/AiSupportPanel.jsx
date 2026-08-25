@@ -174,7 +174,7 @@ export function AiSupportPanel({ session, supportApi }) {
         setSelectedConversationId(null);
         setMessages([]);
       }
-      setStatusMessage("Conversation deleted.");
+      setStatusMessage("");
     } catch (nextError) {
       setError(nextError.message);
       setStatusMessage("");
@@ -284,30 +284,37 @@ export function AiSupportPanel({ session, supportApi }) {
           <h2>Cuộc trò chuyện</h2>
           <div className="support-conversations">
             {conversations.length === 0 ? <p className="support-empty">No conversations yet.</p> : null}
-            {conversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                className={`support-conversation-row${selectedConversationId === conversation.id ? " is-selected" : ""}`}
-              >
-                <button
-                  className="support-conversation"
-                  type="button"
-                  onClick={() => selectConversation(conversation.id)}
-                  disabled={deletingConversationId === conversation.id}
+            {conversations.map((conversation) => {
+              const title = conversation.title || "Untitled conversation";
+              return (
+                <div
+                  key={conversation.id}
+                  className={`support-conversation-row${selectedConversationId === conversation.id ? " is-selected" : ""}`}
                 >
-                  {conversation.title || "Untitled conversation"}
-                </button>
-                <button
-                  className="support-conversation-delete"
-                  type="button"
-                  aria-label="Xóa cuộc trò chuyện"
-                  onClick={() => deleteConversation(conversation)}
-                  disabled={deletingConversationId === conversation.id}
-                >
-                  Xóa
-                </button>
-              </div>
-            ))}
+                  <button
+                    className="support-conversation"
+                    type="button"
+                    aria-label={title}
+                    onClick={() => selectConversation(conversation.id)}
+                    disabled={deletingConversationId === conversation.id}
+                  >
+                    <span className="support-conversation-title" aria-hidden="true">
+                      <span className="support-conversation-title-text">{title}</span>
+                      <span className="support-conversation-title-text" aria-hidden="true">{title}</span>
+                    </span>
+                  </button>
+                  <button
+                    className="support-conversation-delete"
+                    type="button"
+                    aria-label="Xóa cuộc trò chuyện"
+                    onClick={() => deleteConversation(conversation)}
+                    disabled={deletingConversationId === conversation.id}
+                  >
+                    Xóa
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 

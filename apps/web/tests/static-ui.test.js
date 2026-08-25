@@ -46,13 +46,18 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.match(component, /className=\{`support-chat-shell is-\$\{theme\}`\}/);
   assert.match(component, />AHV</);
   assert.match(component, /aria-label="Toggle support theme"/);
+  assert.match(component, /className="support-conversation-title"/);
   assert.match(component, /autoComplete="off"/);
   assert.match(component, /name="support-chat-message"/);
   assert.match(component, /spellCheck="false"/);
   assert.match(css, /\.support-chat-shell\.is-light\s*{/);
   assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-scrollbar-thumb:/);
   assert.match(css, /\.support-sidebar::-webkit-scrollbar-thumb\s*{/);
-  assert.match(css, /\.support-conversation-row \+ \.support-conversation-row\s*{/);
+  assert.doesNotMatch(css, /\.support-conversation-row \+ \.support-conversation-row\s*{[\s\S]*?border-top:/);
+  assert.match(css, /@keyframes support-conversation-title-scroll/);
+  assert.match(css, /\.support-conversation:hover \.support-conversation-title/);
+  assert.match(css, /\.support-message-content strong\s*{[\s\S]*?font-weight:\s*600/);
+  assert.match(css, /\.support-conversation-delete\s*{[\s\S]*?font-weight:\s*600/);
   assert.match(css, /\.support-chat-stage\s*{/);
 });
 
