@@ -855,12 +855,10 @@ input {
 }
 
 @keyframes support-conversation-title-scroll {
-  0%,
-  16% {
+  0% {
     transform: translateX(0);
   }
 
-  84%,
   100% {
     transform: translateX(-50%);
   }

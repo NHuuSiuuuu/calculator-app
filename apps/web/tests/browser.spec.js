@@ -309,6 +309,13 @@ test("support conversation title scrolls on hover without stretching the sidebar
   await conversation.focus();
 
   await expect(page.locator(".support-conversation-title-track")).toHaveCSS("animation-name", "support-conversation-title-scroll");
+  await page.waitForTimeout(350);
+  const titleTrackOffset = await page.locator(".support-conversation-title-track").evaluate((element) => {
+    const transform = window.getComputedStyle(element).transform;
+    if (transform === "none") return 0;
+    return new DOMMatrixReadOnly(transform).m41;
+  });
+  expect(titleTrackOffset).toBeLessThan(-0.5);
   await expect(conversation).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   const sidebarWidthAfter = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
   expect(sidebarWidthAfter).toBe(sidebarWidthBefore);
