@@ -321,6 +321,62 @@ test("support conversation title scrolls on hover without stretching the sidebar
   expect(sidebarWidthAfter).toBe(sidebarWidthBefore);
 });
 
+test("support desktop sidebar stays fixed while long conversations scroll", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Left sidebar is stacked above chat on mobile.");
+
+  const messages = Array.from({ length: 36 }, (_, index) => ({
+    id: `message-${index}`,
+    role: index % 2 === 0 ? "user" : "assistant",
+    content: `Long conversation message ${index + 1}. ${"Company policy detail ".repeat(18)}`,
+  }));
+
+  await page.addInitScript((conversationMessages) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      const path = String(url);
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-long", title: "Long policy chat" }] }) };
+      }
+      if (path.endsWith("/api/conversations/conv-long/messages")) {
+        return { ok: true, json: async () => ({ messages: conversationMessages }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, messages);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Long policy chat" }).click();
+  await expect(page.getByText("Long conversation message 1.")).toBeVisible();
+
+  const sidebarTopBefore = await page.locator(".support-sidebar").evaluate((element) => (
+    element.getBoundingClientRect().top
+  ));
+  await page.evaluate(() => window.scrollTo(0, 640));
+  const sidebarTopAfter = await page.locator(".support-sidebar").evaluate((element) => (
+    element.getBoundingClientRect().top
+  ));
+
+  expect(sidebarTopAfter).toBe(sidebarTopBefore);
+});
+
 test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
