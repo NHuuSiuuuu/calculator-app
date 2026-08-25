@@ -114,7 +114,7 @@ Backend environment:
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_EMBEDDING_MODEL=gemini-embedding-001
-GEMINI_CHAT_MODEL=gemini-2.5-flash-lite
+GEMINI_CHAT_MODEL=gemini-3.5-flash-lite
 EMBEDDING_DIMENSIONS=1536
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -190,7 +190,7 @@ Add environment variables:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `GEMINI_EMBEDDING_MODEL` optional, defaults to `gemini-embedding-001`
-- `GEMINI_CHAT_MODEL` optional, defaults to `gemini-2.5-flash-lite`
+- `GEMINI_CHAT_MODEL` optional, defaults to `gemini-3.5-flash-lite`
 - `EMBEDDING_DIMENSIONS` optional, defaults to `1536`
 
 Do not send API keys through chat or commit them to Git. Add backend keys only in Vercel environment variables or local shell exports.

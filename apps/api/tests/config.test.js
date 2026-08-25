@@ -42,7 +42,7 @@ test("readApiConfig defaults to Gemini provider and models", () => {
   assert.equal(config.aiProvider, "gemini");
   assert.equal(config.geminiApiKey, "gemini-test");
   assert.equal(config.embeddingModel, "gemini-embedding-001");
-  assert.equal(config.chatModel, "gemini-2.5-flash-lite");
+  assert.equal(config.chatModel, "gemini-3.5-flash-lite");
   assert.equal(config.embeddingDimensions, 1536);
 });
 
@@ -68,4 +68,16 @@ test("requireApiConfig reports a missing Gemini key", () => {
     () => requireApiConfig(config),
     /Missing API environment variables: GEMINI_API_KEY/,
   );
+});
+
+test("readApiConfig upgrades the retired Gemini 2.5 Flash-Lite chat model", () => {
+  const config = readApiConfig({
+    AI_PROVIDER: "gemini",
+    GEMINI_API_KEY: "gemini-test",
+    GEMINI_CHAT_MODEL: "gemini-2.5-flash-lite",
+    SUPABASE_URL: "https://demo.supabase.co/",
+    SUPABASE_SERVICE_ROLE_KEY: "service-role",
+  });
+
+  assert.equal(config.chatModel, "gemini-3.5-flash-lite");
 });

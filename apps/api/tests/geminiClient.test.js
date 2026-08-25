@@ -9,7 +9,7 @@ test("createGeminiClient creates 1536-dimensional document embeddings", async ()
     geminiApiKey: "gemini-test",
     embeddingModel: "gemini-embedding-001",
     embeddingDimensions: 1536,
-    chatModel: "gemini-2.5-flash-lite",
+    chatModel: "gemini-3.5-flash-lite",
   }, async (url, options) => {
     requests.push({ url, options });
     return {
@@ -40,7 +40,7 @@ test("createGeminiClient creates chat answers from system and user messages", as
     geminiApiKey: "gemini-test",
     embeddingModel: "gemini-embedding-001",
     embeddingDimensions: 1536,
-    chatModel: "gemini-2.5-flash-lite",
+    chatModel: "gemini-3.5-flash-lite",
   }, async (url, options) => {
     requests.push({ url, options });
     return {
@@ -63,7 +63,7 @@ test("createGeminiClient creates chat answers from system and user messages", as
   ]);
 
   assert.equal(answer, "Refunds are available within 7 days.");
-  assert.match(requests[0].url, /models\/gemini-2.5-flash-lite:generateContent$/);
+  assert.match(requests[0].url, /models\/gemini-3.5-flash-lite:generateContent$/);
   assert.deepEqual(JSON.parse(requests[0].options.body), {
     systemInstruction: {
       parts: [{ text: "Answer only from company docs." }],
@@ -83,7 +83,7 @@ test("createGeminiClient exposes Gemini API failures as gateway errors", async (
     geminiApiKey: "gemini-test",
     embeddingModel: "gemini-embedding-001",
     embeddingDimensions: 1536,
-    chatModel: "gemini-2.5-flash-lite",
+    chatModel: "gemini-3.5-flash-lite",
   }, async () => ({
     ok: false,
     status: 429,
@@ -103,7 +103,7 @@ test("createGeminiClient reports missing embedding values as a gateway error", a
     geminiApiKey: "gemini-test",
     embeddingModel: "gemini-embedding-001",
     embeddingDimensions: 1536,
-    chatModel: "gemini-2.5-flash-lite",
+    chatModel: "gemini-3.5-flash-lite",
   }, async () => ({
     ok: true,
     async json() {

@@ -1,5 +1,10 @@
 export function readApiConfig(env = process.env) {
   const aiProvider = String(env.AI_PROVIDER || "gemini").toLowerCase();
+  const configuredChatModel = String(
+    env.GEMINI_CHAT_MODEL
+      || env.OPENAI_CHAT_MODEL
+      || (aiProvider === "gemini" ? "gemini-3.5-flash-lite" : "gpt-4.1-mini"),
+  );
 
   return {
     aiProvider,
@@ -10,11 +15,7 @@ export function readApiConfig(env = process.env) {
         || env.OPENAI_EMBEDDING_MODEL
         || (aiProvider === "gemini" ? "gemini-embedding-001" : "text-embedding-3-small"),
     ),
-    chatModel: String(
-      env.GEMINI_CHAT_MODEL
-        || env.OPENAI_CHAT_MODEL
-        || (aiProvider === "gemini" ? "gemini-2.5-flash-lite" : "gpt-4.1-mini"),
-    ),
+    chatModel: configuredChatModel === "gemini-2.5-flash-lite" ? "gemini-3.5-flash-lite" : configuredChatModel,
     embeddingDimensions: Number.parseInt(String(env.EMBEDDING_DIMENSIONS ?? "1536"), 10),
     supabaseUrl: String(env.SUPABASE_URL || env.VITE_SUPABASE_URL || "").replace(/\/+$/, ""),
     supabaseServiceRoleKey: String(env.SUPABASE_SERVICE_ROLE_KEY ?? ""),
