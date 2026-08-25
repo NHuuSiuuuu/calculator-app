@@ -8,6 +8,7 @@ function responseItems(payload, key) {
 }
 
 const SUPPORT_THEME_STORAGE_KEY = "support-theme";
+const SCROLL_BOTTOM_THRESHOLD = 96;
 
 function readStoredSupportTheme() {
   const storedTheme = window.localStorage.getItem(SUPPORT_THEME_STORAGE_KEY);
@@ -91,6 +92,8 @@ export function AiSupportPanel({ session, supportApi }) {
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [theme, setTheme] = useState(readStoredSupportTheme);
+  const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false);
+  const messagesRef = useRef(null);
   const conversationRequestGuard = useRef(null);
   if (!conversationRequestGuard.current) {
     conversationRequestGuard.current = createLatestRequestGuard();
@@ -102,6 +105,32 @@ export function AiSupportPanel({ session, supportApi }) {
   useEffect(() => {
     window.localStorage.setItem(SUPPORT_THEME_STORAGE_KEY, theme);
   }, [theme]);
+
+  function updateScrollToBottomVisibility() {
+    const messagesElement = messagesRef.current;
+    if (!messagesElement) {
+      setIsScrollToBottomVisible(false);
+      return;
+    }
+
+    const distanceFromBottom = messagesElement.scrollHeight
+      - messagesElement.scrollTop
+      - messagesElement.clientHeight;
+    setIsScrollToBottomVisible(distanceFromBottom > SCROLL_BOTTOM_THRESHOLD);
+  }
+
+  function scrollMessagesToBottom() {
+    const messagesElement = messagesRef.current;
+    if (!messagesElement) return;
+
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: "auto" });
+    setIsScrollToBottomVisible(false);
+  }
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(scrollMessagesToBottom);
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages.length, selectedConversationId]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -359,7 +388,12 @@ export function AiSupportPanel({ session, supportApi }) {
             {statusMessage ? <p className="support-message-status" aria-live="polite">{statusMessage}</p> : null}
           </div>
 
-          <div className="support-messages" aria-live="polite">
+          <div
+            className="support-messages"
+            ref={messagesRef}
+            aria-live="polite"
+            onScroll={updateScrollToBottomVisibility}
+          >
             {messages.length === 0 ? (
               <div className="support-empty-state">
                 <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
@@ -377,6 +411,17 @@ export function AiSupportPanel({ session, supportApi }) {
               </article>
             ))}
           </div>
+
+          {isScrollToBottomVisible ? (
+            <button
+              className="support-scroll-bottom"
+              type="button"
+              aria-label="Cuộn xuống cuối cuộc trò chuyện"
+              onClick={scrollMessagesToBottom}
+            >
+              <span aria-hidden="true">↓</span>
+            </button>
+          ) : null}
 
           <form className="support-compose" onSubmit={submitMessage} autoComplete="off">
             <label className="sr-only" htmlFor="support-message">Câu hỏi</label>

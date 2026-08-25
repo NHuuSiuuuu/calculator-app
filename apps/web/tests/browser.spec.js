@@ -377,6 +377,68 @@ test("support desktop sidebar stays fixed while long conversations scroll", asyn
   expect(sidebarTopAfter).toBe(sidebarTopBefore);
 });
 
+test("support shows a scroll-to-bottom button after reading older messages", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Mobile AI Support uses page scroll instead of the fixed desktop chat pane.");
+
+  const messages = Array.from({ length: 34 }, (_, index) => ({
+    id: `scroll-message-${index}`,
+    role: index % 2 === 0 ? "user" : "assistant",
+    content: `Scrollable conversation message ${index + 1}. ${"Company handbook detail ".repeat(16)}`,
+  }));
+
+  await page.addInitScript((conversationMessages) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      const path = String(url);
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-scroll", title: "Scrollable chat" }] }) };
+      }
+      if (path.endsWith("/api/conversations/conv-scroll/messages")) {
+        return { ok: true, json: async () => ({ messages: conversationMessages }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, messages);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Scrollable chat" }).click();
+
+  const messagesPane = page.locator(".support-messages");
+  const scrollToBottom = page.getByRole("button", { name: "Cuộn xuống cuối cuộc trò chuyện" });
+  await expect.poll(() => messagesPane.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await expect(scrollToBottom).toBeHidden();
+
+  await messagesPane.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect(scrollToBottom).toBeVisible();
+
+  await scrollToBottom.click();
+  await expect.poll(() => messagesPane.evaluate((element) => (
+    Math.ceil(element.scrollHeight - element.scrollTop - element.clientHeight)
+  ))).toBeLessThan(4);
+  await expect(scrollToBottom).toBeHidden();
+});
+
 test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {

@@ -706,6 +706,7 @@ input {
 .support-chat-panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
+  position: relative;
   height: 100%;
   width: min(100%, 920px);
   min-width: 0;
@@ -912,6 +913,22 @@ input {
   min-height: 0;
   padding: 22px max(18px, calc((100% - 720px) / 2));
   overflow: auto;
+  scrollbar-color: var(--support-scrollbar-thumb) var(--support-scrollbar-track);
+  scrollbar-width: thin;
+}
+
+.support-messages::-webkit-scrollbar {
+  width: 10px;
+}
+
+.support-messages::-webkit-scrollbar-track {
+  background: var(--support-scrollbar-track);
+}
+
+.support-messages::-webkit-scrollbar-thumb {
+  border: 2px solid var(--support-scrollbar-track);
+  border-radius: 999px;
+  background: var(--support-scrollbar-thumb);
 }
 
 .support-empty-state {
@@ -1049,6 +1066,34 @@ input {
   cursor: pointer;
   font-size: 0.84rem;
   font-weight: 600;
+}
+
+.support-scroll-bottom {
+  position: absolute;
+  right: max(20px, calc((100% - 720px) / 2 + 8px));
+  bottom: 74px;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--support-border);
+  border-radius: 999px;
+  background: var(--support-action-bg);
+  color: var(--support-text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.support-scroll-bottom:hover {
+  background: var(--support-action-hover);
+}
+
+.support-scroll-bottom:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 .support-compose button {

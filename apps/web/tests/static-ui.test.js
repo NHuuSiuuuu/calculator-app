@@ -55,6 +55,8 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.match(css, /\.support-chat-shell\s*{[\s\S]*?grid-template-columns:\s*248px minmax\(0, 1fr\)/);
   assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-scrollbar-thumb:/);
   assert.match(css, /\.support-sidebar::-webkit-scrollbar-thumb\s*{/);
+  assert.match(css, /\.support-messages\s*{[\s\S]*?scrollbar-color:\s*var\(--support-scrollbar-thumb\) var\(--support-scrollbar-track\)/);
+  assert.match(css, /\.support-messages::-webkit-scrollbar-thumb\s*{/);
   assert.doesNotMatch(css, /\.support-conversation-row \+ \.support-conversation-row\s*{[\s\S]*?border-top:/);
   assert.match(css, /@keyframes support-conversation-title-scroll/);
   assert.match(css, /\.support-conversation:hover \.support-conversation-title-track/);
