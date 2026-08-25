@@ -598,6 +598,24 @@ input {
   list-style: none;
 }
 
+.support-new-chat {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.support-new-chat:hover {
+  background: #eeeeee;
+}
+
 .support-document {
   display: grid;
   gap: 6px;
@@ -706,6 +724,46 @@ input {
   border-radius: 8px;
   background: #f3f4f6;
   line-height: 1.45;
+}
+
+.support-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  min-width: 46px;
+  min-height: 28px;
+  padding: 7px 2px;
+}
+
+.support-typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-text-muted);
+  animation: support-typing-dot 1s ease-in-out infinite;
+}
+
+.support-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.support-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes support-typing-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
 }
 
 .support-sources {

@@ -127,6 +127,103 @@ test("support keeps completed chat messages when conversation refresh fails", as
   await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
 });
 
+test("support can start a new chat from an existing conversation", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-1", title: "Refund policy" }] }) };
+      }
+      if (String(url).includes("/api/conversations/conv-1/messages")) {
+        return {
+          ok: true,
+          json: async () => ({ messages: [{ id: "message-1", role: "assistant", content: "Existing answer" }] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Refund policy" }).click();
+  await expect(page.getByText("Existing answer", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Tạo chat mới" }).click();
+
+  await expect(page.getByText("Existing answer", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Câu hỏi")).toHaveValue("");
+  await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
+});
+
+test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return new Promise((resolve) => {
+          window.resolveSupportAnswer = () => resolve({
+            ok: true,
+            json: async () => ({ conversationId: "conv-1", answer: "Delayed answer", sources: [] }),
+          });
+        });
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Chờ câu trả lời");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Chờ câu trả lời", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("AI đang trả lời")).toBeVisible();
+
+  await page.evaluate(() => window.resolveSupportAnswer());
+
+  await expect(page.getByLabel("AI đang trả lời")).toHaveCount(0);
+  await expect(page.getByText("Delayed answer", { exact: true })).toBeVisible();
+});
+
 test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {

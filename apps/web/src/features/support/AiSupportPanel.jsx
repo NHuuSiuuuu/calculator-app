@@ -83,6 +83,15 @@ export function AiSupportPanel({ session, supportApi }) {
     }
   }
 
+  function startNewChat() {
+    conversationRequestGuard.current.begin();
+    setSelectedConversationId(null);
+    setMessages([]);
+    setInput("");
+    setError("");
+    setStatusMessage("");
+  }
+
   async function submitMessage(event) {
     event.preventDefault();
     const message = input.trim();
@@ -93,7 +102,8 @@ export function AiSupportPanel({ session, supportApi }) {
     setIsSending(true);
     setInput("");
     const optimisticMessage = { id: messageId("user"), role: "user", content: message };
-    setMessages((current) => [...current, optimisticMessage]);
+    const pendingMessage = { id: messageId("assistant-loading"), role: "assistant", isLoading: true };
+    setMessages((current) => [...current, optimisticMessage, pendingMessage]);
 
     try {
       const result = await api.sendMessage({
@@ -101,14 +111,19 @@ export function AiSupportPanel({ session, supportApi }) {
         message,
       });
       setSelectedConversationId(result.conversationId);
-      setMessages((current) => [...current, {
+      const assistantMessage = {
         id: messageId("assistant"),
         role: "assistant",
         content: result.answer,
         sources: result.sources ?? [],
-      }]);
+      };
+      setMessages((current) => current.map((existing) => (
+        existing.id === pendingMessage.id ? assistantMessage : existing
+      )));
     } catch (nextError) {
-      setMessages((current) => current.filter((existing) => existing.id !== optimisticMessage.id));
+      setMessages((current) => current.filter((existing) => (
+        existing.id !== optimisticMessage.id && existing.id !== pendingMessage.id
+      )));
       setError(nextError.message);
       setStatusMessage("");
       setIsSending(false);
@@ -162,6 +177,9 @@ export function AiSupportPanel({ session, supportApi }) {
         </div>
 
         <div className="support-sidebar-section">
+          <button className="support-new-chat" type="button" onClick={startNewChat}>
+            Tạo chat mới
+          </button>
           <h2>Cuộc trò chuyện</h2>
           <div className="support-conversations">
             {conversations.length === 0 ? <p className="support-empty">No conversations yet.</p> : null}
@@ -225,7 +243,13 @@ export function AiSupportPanel({ session, supportApi }) {
           ) : null}
           {messages.map((message) => (
             <article key={message.id} className={`support-message${message.role === "user" ? " is-user" : ""}`}>
-              <p>{message.content}</p>
+              {message.isLoading ? (
+                <div className="support-typing" aria-label="AI đang trả lời">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              ) : <p>{message.content}</p>}
               {message.sources?.length ? (
                 <div className="support-sources">
                   <strong>Nguồn:</strong>
