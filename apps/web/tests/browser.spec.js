@@ -319,6 +319,9 @@ test("support conversation title scrolls on hover without stretching the sidebar
   await expect(conversation).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   const sidebarWidthAfter = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
   expect(sidebarWidthAfter).toBe(sidebarWidthBefore);
+
+  await page.mouse.move(10, 10);
+  await expect(page.locator(".support-conversation-title-track")).toHaveCSS("animation-name", "none");
 });
 
 test("support desktop sidebar stays fixed while long conversations scroll", async ({ page }, testInfo) => {

@@ -884,14 +884,12 @@ input {
   text-overflow: ellipsis;
 }
 
-.support-conversation:hover .support-conversation-title-track,
-.support-conversation:focus .support-conversation-title-track {
+.support-conversation:hover .support-conversation-title-track {
   max-width: none;
   animation: support-conversation-title-scroll 8s linear infinite;
 }
 
-.support-conversation:hover .support-conversation-title-text,
-.support-conversation:focus .support-conversation-title-text {
+.support-conversation:hover .support-conversation-title-text {
   max-width: none;
   overflow: visible;
   text-overflow: clip;

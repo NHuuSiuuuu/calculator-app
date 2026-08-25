@@ -62,6 +62,8 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.doesNotMatch(css, /\.support-conversation-row \+ \.support-conversation-row\s*{[\s\S]*?border-top:/);
   assert.match(css, /@keyframes support-conversation-title-scroll/);
   assert.match(css, /\.support-conversation:hover \.support-conversation-title-track/);
+  assert.doesNotMatch(css, /\.support-conversation:focus \.support-conversation-title-track/);
+  assert.doesNotMatch(css, /\.support-conversation:focus \.support-conversation-title-text/);
   assert.match(css, /\.support-conversation:hover\s*{[\s\S]*?background:\s*transparent/);
   assert.match(css, /\.support-conversation-row\.is-selected \.support-conversation\s*{[\s\S]*?background:\s*transparent/);
   assert.match(css, /\.support-message-content strong\s*{[\s\S]*?font-weight:\s*600/);
