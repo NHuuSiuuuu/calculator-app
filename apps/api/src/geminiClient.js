@@ -50,10 +50,12 @@ export function createGeminiClient(config, fetchImpl = globalThis.fetch) {
   return {
     async createEmbedding(input, taskType = "QUESTION_ANSWERING") {
       const payload = await request(config.embeddingModel, "embedContent", {
-        taskType,
-        outputDimensionality: config.embeddingDimensions,
         content: {
           parts: [textPart(input)],
+        },
+        embedContentConfig: {
+          taskType,
+          outputDimensionality: config.embeddingDimensions,
         },
       });
       return payload.embedding.values;

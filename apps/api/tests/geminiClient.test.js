@@ -26,10 +26,12 @@ test("createGeminiClient creates 1536-dimensional document embeddings", async ()
   assert.match(requests[0].url, /models\/gemini-embedding-001:embedContent$/);
   assert.equal(requests[0].options.headers["x-goog-api-key"], "gemini-test");
   assert.deepEqual(JSON.parse(requests[0].options.body), {
-    taskType: "RETRIEVAL_DOCUMENT",
-    outputDimensionality: 1536,
     content: {
       parts: [{ text: "Company policy" }],
+    },
+    embedContentConfig: {
+      taskType: "RETRIEVAL_DOCUMENT",
+      outputDimensionality: 1536,
     },
   });
 });
