@@ -45,7 +45,7 @@ export async function handleDocumentUpload({ user, file, repository, openAiClien
     for (const chunk of chunks) {
       chunksWithEmbeddings.push({
         ...chunk,
-        embedding: await openAiClient.createEmbedding(chunk.content),
+        embedding: await openAiClient.createEmbedding(chunk.content, "RETRIEVAL_DOCUMENT"),
       });
     }
 

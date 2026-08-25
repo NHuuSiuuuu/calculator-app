@@ -39,7 +39,8 @@ test("handleDocumentUpload chunks text, embeds chunks, and marks document ready"
       },
     },
     openAiClient: {
-      async createEmbedding() {
+      async createEmbedding(_input, taskType) {
+        assert.equal(taskType, "RETRIEVAL_DOCUMENT");
         return Array.from({ length: 1536 }, () => 0.01);
       },
     },
@@ -73,7 +74,8 @@ test("handleChatRequest stores messages and returns sources", async () => {
       },
     },
     openAiClient: {
-      async createEmbedding() {
+      async createEmbedding(_input, taskType) {
+        assert.equal(taskType, "QUESTION_ANSWERING");
         return Array.from({ length: 1536 }, () => 0.02);
       },
       async createChatAnswer() {

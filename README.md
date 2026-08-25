@@ -84,7 +84,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
+The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
 
 The frontend calls same-origin `/api/*` routes for AI Support.
 
@@ -111,9 +111,11 @@ Chat retrieval uses Top K vector search. It does not reject context with a high 
 Backend environment:
 
 ```bash
-OPENAI_API_KEY=sk-...
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-OPENAI_CHAT_MODEL=gpt-4.1-mini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_CHAT_MODEL=gemini-2.5-flash-lite
+EMBEDDING_DIMENSIONS=1536
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
@@ -137,7 +139,8 @@ npm ci
 The app has two services. Start the API in one terminal with the backend variables exported:
 
 ```bash
-export OPENAI_API_KEY=sk-...
+export AI_PROVIDER=gemini
+export GEMINI_API_KEY=your-gemini-api-key
 export SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 npm run dev:api
@@ -182,11 +185,15 @@ Add environment variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `OPENAI_API_KEY`
+- `AI_PROVIDER` set to `gemini`
+- `GEMINI_API_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `OPENAI_EMBEDDING_MODEL` optional, defaults to `text-embedding-3-small`
-- `OPENAI_CHAT_MODEL` optional, defaults to `gpt-4.1-mini`
+- `GEMINI_EMBEDDING_MODEL` optional, defaults to `gemini-embedding-001`
+- `GEMINI_CHAT_MODEL` optional, defaults to `gemini-2.5-flash-lite`
+- `EMBEDDING_DIMENSIONS` optional, defaults to `1536`
+
+Do not send API keys through chat or commit them to Git. Add backend keys only in Vercel environment variables or local shell exports.
 
 Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 

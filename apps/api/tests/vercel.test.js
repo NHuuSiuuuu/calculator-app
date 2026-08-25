@@ -53,7 +53,7 @@ test("nested Vercel API functions are available for upload and conversation mess
 
 test("Vercel handler returns JSON when API setup fails before routing", () => {
   const handler = createVercelHandler(() => {
-    const error = new Error("Missing API environment variables: OPENAI_API_KEY");
+    const error = new Error("Missing API environment variables: GEMINI_API_KEY");
     error.statusCode = 500;
     throw error;
   });
@@ -64,6 +64,6 @@ test("Vercel handler returns JSON when API setup fails before routing", () => {
   assert.equal(response.statusCode, 500);
   assert.equal(response.headers["content-type"], "application/json; charset=utf-8");
   assert.deepEqual(JSON.parse(response.body), {
-    error: "Missing API environment variables: OPENAI_API_KEY",
+    error: "Missing API environment variables: GEMINI_API_KEY",
   });
 });

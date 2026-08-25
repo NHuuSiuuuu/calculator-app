@@ -49,7 +49,7 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
   if (!hasReadyDocuments) {
     answer = createEmptyKnowledgeBaseAnswer();
   } else {
-    const queryEmbedding = await openAiClient.createEmbedding(message);
+    const queryEmbedding = await openAiClient.createEmbedding(message, "QUESTION_ANSWERING");
     chunks = await repository.matchChunks(queryEmbedding, RETRIEVAL_MATCH_THRESHOLD, RETRIEVAL_TOP_K);
     if (chunks.length === 0) {
       answer = createNoContextAnswer();
