@@ -283,6 +283,33 @@ test("handleDocumentUpload accepts a markdown extension with a generic MIME type
   assert.equal(documents[0].contentType, "text/markdown");
 });
 
+test("handleDocumentUpload accepts a plain text document", async () => {
+  const documents = [];
+  const result = await handleDocumentUpload({
+    user: { id: "admin-1" },
+    file: { filename: "faq.txt", contentType: "text/plain", text: "Khach dat san bong bang cach chon lich trong va thanh toan coc." },
+    repository: {
+      async createDocument(input) {
+        documents.push(input);
+        return { id: "doc-1" };
+      },
+      async insertChunks() {},
+      async markDocumentReady() {},
+      async markDocumentFailed() {
+        throw new Error("should not fail");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        return Array.from({ length: 1536 }, () => 0.01);
+      },
+    },
+  });
+
+  assert.equal(result.status, "ready");
+  assert.equal(documents[0].contentType, "text/plain");
+});
+
 test("handleChatRequest rejects an oversized message before creating a conversation", async () => {
   const calls = [];
 
