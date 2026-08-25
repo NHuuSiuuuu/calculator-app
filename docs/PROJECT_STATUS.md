@@ -13,8 +13,8 @@
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
-- Status: implemented; final review fixes applied
-- Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+- Status: implemented; Top K RAG retrieval applied
+- Scope: demo chat without sign-in, demo `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector Top K search, conversation history
 
 ## Implemented
 
@@ -27,6 +27,7 @@
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
 - Demo AI Support chat with grounded OpenAI answers without requiring sign-in
 - Public demo `.txt` and `.md` ingestion with pgvector embeddings and status metadata
+- Top K retrieval that passes related chunks into the prompt instead of dropping context with a high fixed similarity threshold
 - Demo conversation history with reconstructed source metadata and recency ordering
 
 ## Required Supabase Setup

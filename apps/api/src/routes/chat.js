@@ -5,6 +5,8 @@ import {
 } from "../ragPrompt.js";
 
 const MAX_MESSAGE_CHARS = 4000;
+const RETRIEVAL_TOP_K = 5;
+const RETRIEVAL_MATCH_THRESHOLD = -1;
 
 function titleFromMessage(message) {
   return message.trim().replace(/\s+/g, " ").slice(0, 80);
@@ -48,7 +50,7 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
     answer = createEmptyKnowledgeBaseAnswer();
   } else {
     const queryEmbedding = await openAiClient.createEmbedding(message);
-    chunks = await repository.matchChunks(queryEmbedding, 0.74, 5);
+    chunks = await repository.matchChunks(queryEmbedding, RETRIEVAL_MATCH_THRESHOLD, RETRIEVAL_TOP_K);
     if (chunks.length === 0) {
       answer = createNoContextAnswer();
     } else {

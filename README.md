@@ -88,6 +88,26 @@ The AI Support feature uses a backend API so OpenAI and Supabase service-role se
 
 The frontend calls same-origin `/api/*` routes for AI Support.
 
+RAG means Retrieval-Augmented Generation:
+
+```text
+Retrieval -> Augmented prompt -> Generation
+```
+
+The implemented flow follows these 7 steps:
+
+```text
+1. Load Documents from uploaded .txt/.md files
+2. Chunking splits documents into smaller text chunks
+3. Embedding converts each chunk into a vector
+4. Store vectors in Supabase Postgres with pgvector
+5. Embed the user's question
+6. Retriever gets the Top K related chunks from the vector database
+7. LLM answers from Context + Question
+```
+
+Chat retrieval uses Top K vector search. It does not reject context with a high fixed similarity threshold before the LLM sees it.
+
 Backend environment:
 
 ```bash

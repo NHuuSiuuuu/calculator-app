@@ -89,6 +89,46 @@ test("handleChatRequest stores messages and returns sources", async () => {
   assert.equal(messages[1].role, "assistant");
 });
 
+test("handleChatRequest retrieves the top K chunks without a high similarity threshold", async () => {
+  const retrievalCalls = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Tôi muốn sân bóng" },
+    repository: {
+      async createConversation() {
+        return { id: "conv-1" };
+      },
+      async insertMessage() {},
+      async hasReadyDocuments() {
+        return true;
+      },
+      async matchChunks(embedding, threshold, count) {
+        retrievalCalls.push({ embedding, threshold, count });
+        return [{
+          chunkId: "chunk-1",
+          filename: "faq.md",
+          content: "Khách muốn đặt sân bóng thì chọn lịch trống và thanh toán cọc.",
+          similarity: 0.52,
+        }];
+      },
+    },
+    openAiClient: {
+      async createEmbedding(input) {
+        assert.equal(input, "Tôi muốn sân bóng");
+        return [0.21, 0.82, 0.53];
+      },
+      async createChatAnswer(messages) {
+        assert.match(messages[1].content, /Khách muốn đặt sân bóng/);
+        return "Anh chọn lịch trống rồi thanh toán cọc để đặt sân.";
+      },
+    },
+  });
+
+  assert.deepEqual(retrievalCalls, [{ embedding: [0.21, 0.82, 0.53], threshold: -1, count: 5 }]);
+  assert.equal(result.answer, "Anh chọn lịch trống rồi thanh toán cọc để đặt sân.");
+  assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "faq.md", similarity: 0.52 }]);
+});
+
 test("handleChatRequest rejects an existing conversation not owned by the user", async () => {
   const messages = [];
 

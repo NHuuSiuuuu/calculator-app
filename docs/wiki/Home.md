@@ -25,7 +25,25 @@ AI Support RAG uses a custom Node.js API backend. The current demo exposes AI Su
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; final review fixes applied
-- Scope: demo chat without sign-in, `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+- Scope: demo chat without sign-in, `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector Top K retrieval, conversation history
+
+RAG means:
+
+```text
+Retrieval -> Augmented prompt -> Generation
+```
+
+AI Support uses this flow:
+
+```text
+Load Documents
+Chunking
+Embedding
+Store Vector DB
+Embed question
+Retriever gets Top K documents
+LLM creates the answer from Context + Question
+```
 
 ## Local Development
 
