@@ -39,7 +39,8 @@ test("handleDocumentUpload chunks text, embeds chunks, and marks document ready"
       },
     },
     openAiClient: {
-      async createEmbedding() {
+      async createEmbedding(_input, taskType) {
+        assert.equal(taskType, "RETRIEVAL_DOCUMENT");
         return Array.from({ length: 1536 }, () => 0.01);
       },
     },
@@ -73,7 +74,8 @@ test("handleChatRequest stores messages and returns sources", async () => {
       },
     },
     openAiClient: {
-      async createEmbedding() {
+      async createEmbedding(_input, taskType) {
+        assert.equal(taskType, "QUESTION_ANSWERING");
         return Array.from({ length: 1536 }, () => 0.02);
       },
       async createChatAnswer() {
@@ -87,6 +89,152 @@ test("handleChatRequest stores messages and returns sources", async () => {
   assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "policy.md", similarity: 0.88 }]);
   assert.equal(messages[0].role, "user");
   assert.equal(messages[1].role, "assistant");
+});
+
+test("handleChatRequest generates a concise conversation title from the chat content", async () => {
+  const calls = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Tôi muốn biết quy định nghỉ phép năm của công ty đang áp dụng thế nào?" },
+    repository: {
+      async createConversation(userId, title) {
+        calls.push(["createConversation", userId, title]);
+        return { id: "conv-1" };
+      },
+      async insertMessage(message) {
+        calls.push(["insertMessage", message.role]);
+      },
+      async hasReadyDocuments() {
+        return false;
+      },
+      async updateConversationTitle(userId, conversationId, title) {
+        calls.push(["updateConversationTitle", userId, conversationId, title]);
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed without documents");
+      },
+      async createChatAnswer(messages) {
+        calls.push(["createChatAnswer", messages.at(-1).content]);
+        return "Quy định nghỉ phép năm";
+      },
+    },
+  });
+
+  assert.equal(result.conversationId, "conv-1");
+  assert.deepEqual(calls.at(-1), ["updateConversationTitle", "user-1", "conv-1", "Quy định nghỉ phép năm"]);
+  assert.notEqual(calls[0][2], "Quy định nghỉ phép năm");
+});
+
+test("handleChatRequest keeps the answer when generated conversation title fails", async () => {
+  let titleAttempts = 0;
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Nội quy công ty áp dụng ra sao?" },
+    repository: {
+      async createConversation() {
+        return { id: "conv-1" };
+      },
+      async insertMessage() {},
+      async hasReadyDocuments() {
+        return false;
+      },
+      async updateConversationTitle() {
+        throw new Error("should not update a failed title");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed without documents");
+      },
+      async createChatAnswer() {
+        titleAttempts += 1;
+        throw new Error("title model failed");
+      },
+    },
+  });
+
+  assert.equal(result.conversationId, "conv-1");
+  assert.match(result.answer, /chưa tìm thấy thông tin/i);
+  assert.equal(titleAttempts, 1);
+});
+
+test("handleChatRequest retrieves the top K chunks without a high similarity threshold", async () => {
+  const retrievalCalls = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "Tôi muốn sân bóng" },
+    repository: {
+      async createConversation() {
+        return { id: "conv-1" };
+      },
+      async insertMessage() {},
+      async hasReadyDocuments() {
+        return true;
+      },
+      async matchChunks(embedding, threshold, count) {
+        retrievalCalls.push({ embedding, threshold, count });
+        return [{
+          chunkId: "chunk-1",
+          filename: "faq.md",
+          content: "Khách muốn đặt sân bóng thì chọn lịch trống và thanh toán cọc.",
+          similarity: 0.52,
+        }];
+      },
+    },
+    openAiClient: {
+      async createEmbedding(input) {
+        assert.equal(input, "Tôi muốn sân bóng");
+        return [0.21, 0.82, 0.53];
+      },
+      async createChatAnswer(messages) {
+        assert.match(messages[1].content, /Khách muốn đặt sân bóng/);
+        return "Anh chọn lịch trống rồi thanh toán cọc để đặt sân.";
+      },
+    },
+  });
+
+  assert.deepEqual(retrievalCalls, [{ embedding: [0.21, 0.82, 0.53], threshold: -1, count: 5 }]);
+  assert.equal(result.answer, "Anh chọn lịch trống rồi thanh toán cọc để đặt sân.");
+  assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "faq.md", similarity: 0.52 }]);
+});
+
+test("handleChatRequest answers short greetings as the company AI assistant without retrieval", async () => {
+  const messages = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "hi" },
+    repository: {
+      async createConversation(_userId, title) {
+        assert.equal(title, "hi");
+        return { id: "conv-1" };
+      },
+      async insertMessage(message) {
+        messages.push(message);
+      },
+      async hasReadyDocuments() {
+        throw new Error("should not check documents for a greeting");
+      },
+      async matchChunks() {
+        throw new Error("should not retrieve chunks for a greeting");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed a greeting");
+      },
+      async createChatAnswer() {
+        throw new Error("should not call chat model for a greeting");
+      },
+    },
+  });
+
+  assert.equal(result.answer, "Xin chào! Tôi là chatbot của công ty AHV Holding. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?");
+  assert.deepEqual(result.sources, []);
+  assert.equal(messages[0].role, "user");
+  assert.equal(messages[1].role, "assistant");
+  assert.equal(messages[1].content, result.answer);
 });
 
 test("handleChatRequest rejects an existing conversation not owned by the user", async () => {
@@ -150,7 +298,7 @@ test("handleChatRequest returns the no-context answer when retrieval is empty", 
     },
   });
 
-  assert.equal(result.answer, "Em không tìm thấy thông tin phù hợp trong tài liệu công ty đã upload, nên chưa thể trả lời chắc chắn câu hỏi này.");
+  assert.equal(result.answer, "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[1].role, "assistant");
 });
@@ -184,7 +332,7 @@ test("handleChatRequest distinguishes an empty knowledge base from irrelevant re
     },
   });
 
-  assert.match(result.answer, /chưa có tài liệu công ty/i);
+  assert.equal(result.answer, "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[1].role, "assistant");
 });
@@ -241,6 +389,33 @@ test("handleDocumentUpload accepts a markdown extension with a generic MIME type
 
   assert.equal(result.status, "ready");
   assert.equal(documents[0].contentType, "text/markdown");
+});
+
+test("handleDocumentUpload accepts a plain text document", async () => {
+  const documents = [];
+  const result = await handleDocumentUpload({
+    user: { id: "admin-1" },
+    file: { filename: "faq.txt", contentType: "text/plain", text: "Khach dat san bong bang cach chon lich trong va thanh toan coc." },
+    repository: {
+      async createDocument(input) {
+        documents.push(input);
+        return { id: "doc-1" };
+      },
+      async insertChunks() {},
+      async markDocumentReady() {},
+      async markDocumentFailed() {
+        throw new Error("should not fail");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        return Array.from({ length: 1536 }, () => 0.01);
+      },
+    },
+  });
+
+  assert.equal(result.status, "ready");
+  assert.equal(documents[0].contentType, "text/plain");
 });
 
 test("handleChatRequest rejects an oversized message before creating a conversation", async () => {
@@ -366,6 +541,52 @@ test("HTTP document list accepts demo requests without admin auth", async () => 
   assert.equal(listed, true);
 });
 
+test("HTTP document delete removes a demo document", async () => {
+  const calls = [];
+  await withApiServer({
+    authService: {
+      async requireAdmin() {
+        throw new Error("should not require admin auth in demo mode");
+      },
+    },
+    repository: {
+      async deleteDocument(ownerId, documentId) {
+        calls.push(["deleteDocument", ownerId, documentId]);
+        return true;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents/doc-1`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+  });
+
+  assert.deepEqual(calls, [["deleteDocument", null, "doc-1"]]);
+});
+
+test("HTTP document delete returns not found for missing demo documents", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteDocument() {
+        return false;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents/missing-doc`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "Document not found" });
+  });
+});
+
 test("HTTP current-user endpoint returns demo admin without auth", async () => {
   await withApiServer({
     authService: {
@@ -429,6 +650,48 @@ test("HTTP chat accepts demo requests without auth", async () => {
   assert.deepEqual(calls[0], ["createConversation", null, "What is the refund window?"]);
 });
 
+test("HTTP conversation delete removes a demo conversation", async () => {
+  const calls = [];
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteConversation(userId, conversationId) {
+        calls.push(["deleteConversation", userId, conversationId]);
+        return true;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/conversations/conv-1`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+  });
+
+  assert.deepEqual(calls, [["deleteConversation", null, "conv-1"]]);
+});
+
+test("HTTP conversation delete returns not found for missing demo conversations", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteConversation() {
+        return false;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/conversations/missing-conv`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "Conversation not found" });
+  });
+});
+
 test("HTTP server hides unclassified internal error details", async () => {
   await withApiServer({
     authService: {
@@ -449,5 +712,27 @@ test("HTTP server hides unclassified internal error details", async () => {
 
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), { error: "Internal server error" });
+  });
+});
+
+test("HTTP server exposes classified setup errors", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async listDocuments() {
+        const error = new Error("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+        error.statusCode = 500;
+        error.expose = true;
+        throw error;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents`);
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.",
+    });
   });
 });

@@ -3,7 +3,7 @@ function normalizeBaseUrl(baseUrl) {
 }
 
 export function createSupportApi({
-  baseUrl = import.meta.env.VITE_SUPPORT_API_URL,
+  baseUrl = "",
   getAccessToken,
   fetchImpl = globalThis.fetch,
 }) {
@@ -22,7 +22,8 @@ export function createSupportApi({
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.error ?? `Request failed with ${response.status}`);
+      const detail = payload.error ? `: ${payload.error}` : "";
+      throw new Error(`${path} failed with ${response.status}${detail}`);
     }
     return payload;
   }
@@ -42,6 +43,16 @@ export function createSupportApi({
     },
     listMessages(conversationId) {
       return request(`/api/conversations/${conversationId}/messages`);
+    },
+    deleteConversation(conversationId) {
+      return request(`/api/conversations/${conversationId}`, {
+        method: "DELETE",
+      });
+    },
+    deleteDocument(documentId) {
+      return request(`/api/documents/${documentId}`, {
+        method: "DELETE",
+      });
     },
     listDocuments() {
       return request("/api/documents");

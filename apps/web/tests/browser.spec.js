@@ -127,6 +127,372 @@ test("support keeps completed chat messages when conversation refresh fails", as
   await expect(page.getByRole("alert")).toContainText("Conversation refresh failed");
 });
 
+test("support can start a new chat from an existing conversation", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-1", title: "Refund policy" }] }) };
+      }
+      if (String(url).includes("/api/conversations/conv-1/messages")) {
+        return {
+          ok: true,
+          json: async () => ({ messages: [{ id: "message-1", role: "assistant", content: "Existing answer" }] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Refund policy" }).click();
+  await expect(page.getByText("Existing answer", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Tạo chat mới" }).click();
+
+  await expect(page.getByText("Existing answer", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("Câu hỏi")).toHaveValue("");
+  await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
+});
+
+test("support can delete the selected conversation", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    let conversations = [{ id: "conv-1", title: "Refund policy" }];
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations }) };
+      }
+      if (String(url).endsWith("/api/conversations/conv-1") && options.method === "DELETE") {
+        conversations = [];
+        return { ok: true, json: async () => ({ deleted: true }) };
+      }
+      if (String(url).includes("/api/conversations/conv-1/messages")) {
+        return {
+          ok: true,
+          json: async () => ({ messages: [{ id: "message-1", role: "assistant", content: "Existing answer" }] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Refund policy" }).click();
+  await expect(page.getByText("Existing answer", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Xóa cuộc trò chuyện" }).click();
+
+  await expect(page.getByRole("button", { name: "Refund policy" })).toHaveCount(0);
+  await expect(page.getByText("Existing answer", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
+  await expect(page.getByText("Conversation deleted.", { exact: true })).toHaveCount(0);
+});
+
+test("AI Support keeps the selected theme after reload", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-dark/);
+
+  await page.getByRole("button", { name: "Toggle support theme" }).click();
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-light/);
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("support-theme"))).toBe("light");
+
+  await page.reload();
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-light/);
+});
+
+test("support conversation title scrolls on hover without stretching the sidebar", async ({ page }) => {
+  const longTitle = "Quy định nghỉ phép năm và quy trình duyệt đơn nghỉ của công ty AHV Holding";
+  await page.addInitScript((title) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-long", title }] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, longTitle);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const sidebar = page.locator(".support-sidebar");
+  const conversation = page.getByRole("button", { name: longTitle });
+  const sidebarWidthBefore = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
+
+  await conversation.hover();
+  await conversation.focus();
+
+  await expect(page.locator(".support-conversation-title-track")).toHaveCSS("animation-name", "support-conversation-title-scroll");
+  await page.waitForTimeout(350);
+  const titleTrackOffset = await page.locator(".support-conversation-title-track").evaluate((element) => {
+    const transform = window.getComputedStyle(element).transform;
+    if (transform === "none") return 0;
+    return new DOMMatrixReadOnly(transform).m41;
+  });
+  expect(titleTrackOffset).toBeLessThan(-0.5);
+  await expect(conversation).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const sidebarWidthAfter = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
+  expect(sidebarWidthAfter).toBe(sidebarWidthBefore);
+
+  await page.mouse.move(10, 10);
+  await expect(page.locator(".support-conversation-title-track")).toHaveCSS("animation-name", "none");
+});
+
+test("support desktop sidebar stays fixed while long conversations scroll", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Left sidebar is stacked above chat on mobile.");
+
+  const messages = Array.from({ length: 36 }, (_, index) => ({
+    id: `message-${index}`,
+    role: index % 2 === 0 ? "user" : "assistant",
+    content: `Long conversation message ${index + 1}. ${"Company policy detail ".repeat(18)}`,
+  }));
+
+  await page.addInitScript((conversationMessages) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      const path = String(url);
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-long", title: "Long policy chat" }] }) };
+      }
+      if (path.endsWith("/api/conversations/conv-long/messages")) {
+        return { ok: true, json: async () => ({ messages: conversationMessages }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, messages);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Long policy chat" }).click();
+  await expect(page.getByText("Long conversation message 1.")).toBeVisible();
+
+  const sidebarTopBefore = await page.locator(".support-sidebar").evaluate((element) => (
+    element.getBoundingClientRect().top
+  ));
+  await page.evaluate(() => window.scrollTo(0, 640));
+  const sidebarTopAfter = await page.locator(".support-sidebar").evaluate((element) => (
+    element.getBoundingClientRect().top
+  ));
+
+  expect(sidebarTopAfter).toBe(sidebarTopBefore);
+});
+
+test("support shows a scroll-to-bottom button after reading older messages", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Mobile AI Support uses page scroll instead of the fixed desktop chat pane.");
+
+  const messages = Array.from({ length: 34 }, (_, index) => ({
+    id: `scroll-message-${index}`,
+    role: index % 2 === 0 ? "user" : "assistant",
+    content: `Scrollable conversation message ${index + 1}. ${"Company handbook detail ".repeat(16)}`,
+  }));
+
+  await page.addInitScript((conversationMessages) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      const path = String(url);
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-scroll", title: "Scrollable chat" }] }) };
+      }
+      if (path.endsWith("/api/conversations/conv-scroll/messages")) {
+        return { ok: true, json: async () => ({ messages: conversationMessages }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, messages);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Scrollable chat" }).click();
+
+  const messagesPane = page.locator(".support-messages");
+  const scrollToBottom = page.getByRole("button", { name: "Cuộn xuống cuối cuộc trò chuyện" });
+  await expect.poll(() => messagesPane.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await expect(scrollToBottom).toBeHidden();
+
+  await messagesPane.evaluate((element) => {
+    element.scrollTop = 0;
+    element.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+  await expect(scrollToBottom).toBeVisible();
+
+  await scrollToBottom.click();
+  await expect.poll(() => messagesPane.evaluate((element) => (
+    Math.ceil(element.scrollHeight - element.scrollTop - element.clientHeight)
+  ))).toBeLessThan(4);
+  await expect(scrollToBottom).toBeHidden();
+});
+
+test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return new Promise((resolve) => {
+          window.resolveSupportAnswer = () => resolve({
+            ok: true,
+            json: async () => ({ conversationId: "conv-1", answer: "Delayed answer", sources: [] }),
+          });
+        });
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Chờ câu trả lời");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.getByText("Chờ câu trả lời", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("AI đang trả lời")).toBeVisible();
+
+  await page.evaluate(() => window.resolveSupportAnswer());
+
+  await expect(page.getByLabel("AI đang trả lời")).toHaveCount(0);
+  await expect(page.getByText("Delayed answer", { exact: true })).toBeVisible();
+});
+
 test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {
@@ -170,7 +536,35 @@ test("signed-out users can use demo AI Support and see document upload", async (
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
 });
 
-test("signed-in users can chat with AI Support and see sources", async ({ page }) => {
+test("demo AI Support keeps document upload visible when the API is failing", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "Request failed with 500" }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("Request failed with 500");
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+});
+
+test("signed-in users can chat with AI Support without visible sources", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "support-token",
@@ -220,10 +614,60 @@ test("signed-in users can chat with AI Support and see sources", async ({ page }
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Chính sách hoàn tiền là 7 ngày.")).toBeVisible();
-  await expect(page.getByText("policy.md")).toBeVisible();
+  await expect(page.getByText("Nguồn:")).toHaveCount(0);
+  await expect(page.getByText("policy.md")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
   expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
+});
+
+test("AI Support renders assistant markdown with bold text and separate bullet lines", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversationId: "conv-1",
+            answer: "**Lịch nghỉ công ty:**\n- Tết Dương lịch: 01 ngày.\n- Quốc khánh: 02 ngày.",
+            sources: [],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Thông tin ngày nghỉ công ty");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.locator(".support-message strong", { hasText: "Lịch nghỉ công ty:" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Tết Dương lịch: 01 ngày." })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Quốc khánh: 02 ngày." })).toBeVisible();
 });
 
 test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
@@ -279,6 +723,68 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
   await expect(documents.getByText("0 chunks", { exact: true })).toBeVisible();
   await expect(documents.getByText("2026-08-24 10:15 UTC", { exact: true })).toBeVisible();
   await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
+});
+
+test("admin support dashboard can delete an old company document", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "admin-token",
+      user: { id: "admin-1", email: "admin@example.com" },
+    };
+    let documents = [{
+      id: "doc-old",
+      filename: "old-policy.md",
+      status: "ready",
+      chunk_count: 3,
+      error_message: null,
+      created_at: "2026-08-24T10:15:00.000Z",
+    }];
+    window.supportDocumentRequests = [];
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      const path = String(url);
+      window.supportDocumentRequests.push({ url: path, method: options.method ?? "GET" });
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (path.endsWith("/api/documents/doc-old") && options.method === "DELETE") {
+        documents = [];
+        return { ok: true, json: async () => ({ deleted: true }) };
+      }
+      if (path.endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const documents = page.getByRole("region", { name: "Company documents" });
+  await expect(documents.getByText("old-policy.md")).toBeVisible();
+  await documents.getByRole("button", { name: "Xóa tài liệu old-policy.md" }).click();
+
+  await expect(documents.getByText("old-policy.md")).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportDocumentRequests)).toContainEqual({
+    url: "/api/documents/doc-old",
+    method: "DELETE",
+  });
 });
 
 test("support discards a stale conversation response after the account changes", async ({ page }) => {

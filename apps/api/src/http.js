@@ -10,7 +10,7 @@ function corsHeaders() {
   return {
     "access-control-allow-origin": "*",
     "access-control-allow-headers": "authorization, content-type",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
   };
 }
 
@@ -119,6 +119,18 @@ function routeNotFound() {
   return error;
 }
 
+function conversationNotFound() {
+  const error = new Error("Conversation not found");
+  error.statusCode = 404;
+  return error;
+}
+
+function documentNotFound() {
+  const error = new Error("Document not found");
+  error.statusCode = 404;
+  return error;
+}
+
 export function createApiServer({ authService, repository, openAiClient }) {
   return http.createServer(async (request, response) => {
     try {
@@ -137,6 +149,16 @@ export function createApiServer({ authService, repository, openAiClient }) {
 
       if (request.method === "GET" && url.pathname === "/api/documents") {
         sendJson(response, 200, { documents: await repository.listDocuments() });
+        return;
+      }
+
+      const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
+      if (request.method === "DELETE" && documentMatch) {
+        const deleted = await repository.deleteDocument(DEMO_SUPPORT_USER.id, decodeURIComponent(documentMatch[1]));
+        if (!deleted) {
+          throw documentNotFound();
+        }
+        sendJson(response, 200, { deleted: true });
         return;
       }
 
@@ -166,11 +188,21 @@ export function createApiServer({ authService, repository, openAiClient }) {
         return;
       }
 
+      const conversationMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
+      if (request.method === "DELETE" && conversationMatch) {
+        const deleted = await repository.deleteConversation(DEMO_SUPPORT_USER.id, decodeURIComponent(conversationMatch[1]));
+        if (!deleted) {
+          throw conversationNotFound();
+        }
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+
       throw routeNotFound();
     } catch (error) {
       const statusCode = error.statusCode ?? 500;
       sendJson(response, statusCode, {
-        error: statusCode === 500 ? "Internal server error" : error.message ?? "Internal server error",
+        error: statusCode === 500 && !error.expose ? "Internal server error" : error.message ?? "Internal server error",
       });
     }
   });

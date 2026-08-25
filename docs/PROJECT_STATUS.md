@@ -8,13 +8,13 @@
 - App platform: React + Vite frontend with Node.js API
 - Web app path: `apps/web`
 - Database migrations path: `supabase/migrations`
-- Recommended deploy targets: Vercel frontend and a Node.js API host
+- Recommended deploy target: Vercel web app with `/api/*` support routes
 
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
-- Status: implemented; final review fixes applied
-- Scope: authenticated chat, admin `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+- Status: implemented; Top K RAG retrieval applied
+- Scope: demo chat without sign-in, demo `.txt/.md` uploads, Gemini embeddings, Supabase pgvector Top K search, conversation history
 
 ## Implemented
 
@@ -25,8 +25,9 @@
 - Supabase migration with `user_id`, existing-table upgrade handling, and RLS scoped to `auth.uid()`
 - Auth-gated Todo UI
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
-- Demo AI Support chat with grounded OpenAI answers without requiring sign-in
+- Demo AI Support chat with grounded Gemini answers without requiring sign-in
 - Public demo `.txt` and `.md` ingestion with pgvector embeddings and status metadata
+- Top K retrieval that passes related chunks into the prompt instead of dropping context with a high fixed similarity threshold
 - Demo conversation history with reconstructed source metadata and recency ordering
 
 ## Required Supabase Setup
@@ -45,7 +46,7 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
 ```
 
-The same Vercel project also requires `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` for `/api/*`. Do not use service role keys or database passwords in frontend code.
+The same Vercel project also requires `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` for `/api/*`. Do not use service role keys, Gemini keys, or database passwords in frontend code.
 
 If the database already contains todos from the earlier anonymous demo, the migration removes rows without `user_id` before enforcing per-user ownership.
 
@@ -60,13 +61,12 @@ npm run build
 
 ## Deployment Notes
 
-Use Vercel from the repository root with:
+Use Vercel with either supported layout:
 
-- Root Directory: repository root
-- Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
+- Repository root: Build Command `npm run build`, Output Directory `apps/web/dist`
+- `apps/web` root: Build Command `npm run build`, Output Directory `dist`
 
-The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
+The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel.
 
 ## Roadmap
 

@@ -1,6 +1,24 @@
+function createSetupError(message) {
+  const setupError = new Error(message);
+  setupError.statusCode = 500;
+  setupError.expose = true;
+  return setupError;
+}
+
 function raiseIfError(error) {
   if (error) {
-    throw new Error(error.message ?? "Supabase request failed");
+    const message = error.message ?? "Supabase request failed";
+    if (/relation "support_(documents|document_chunks|conversations|messages)" does not exist/i.test(message)
+      || /match_support_chunks/i.test(message)) {
+      throw createSetupError("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+    }
+    if (/permission denied|row-level security|invalid api key|invalid jwt|jwt/i.test(message)) {
+      throw createSetupError("Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel.");
+    }
+    if (/expected \d+ dimensions, not \d+/i.test(message)) {
+      throw createSetupError("Embedding dimension mismatch. Gemini must return 1536-dimensional embeddings for the current Supabase schema.");
+    }
+    throw new Error(message);
   }
 }
 
@@ -10,6 +28,10 @@ function selectSingle(query) {
 
 function scopeByNullableUser(query, userId) {
   return userId === null ? query.is("user_id", null) : query.eq("user_id", userId);
+}
+
+function scopeByNullableOwner(query, ownerId) {
+  return ownerId === null ? query.is("owner_id", null) : query.eq("owner_id", ownerId);
 }
 
 export function createSupportRepository(supabase) {
@@ -85,6 +107,18 @@ export function createSupportRepository(supabase) {
       return (data ?? []).length > 0;
     },
 
+    async deleteDocument(ownerId, documentId) {
+      const query = scopeByNullableOwner(
+        supabase.from("support_documents")
+          .delete()
+          .eq("id", documentId),
+        ownerId,
+      );
+      const { data, error } = await query.select("id").maybeSingle();
+      raiseIfError(error);
+      return Boolean(data);
+    },
+
     async createConversation(userId, title) {
       const { data, error } = await selectSingle(supabase.from("support_conversations").insert({
         user_id: userId,
@@ -92,6 +126,14 @@ export function createSupportRepository(supabase) {
       }));
       raiseIfError(error);
       return data;
+    },
+
+    async updateConversationTitle(userId, conversationId, title) {
+      const query = supabase.from("support_conversations")
+        .update({ title: title.slice(0, 120) })
+        .eq("id", conversationId);
+      const { error } = await scopeByNullableUser(query, userId);
+      raiseIfError(error);
     },
 
     async listConversations(userId) {
@@ -111,6 +153,18 @@ export function createSupportRepository(supabase) {
         .maybeSingle();
       raiseIfError(error);
       return data;
+    },
+
+    async deleteConversation(userId, conversationId) {
+      const query = scopeByNullableUser(
+        supabase.from("support_conversations")
+          .delete()
+          .eq("id", conversationId),
+        userId,
+      );
+      const { data, error } = await query.select("id").maybeSingle();
+      raiseIfError(error);
+      return Boolean(data);
     },
 
     async getMessages(userId, conversationId) {

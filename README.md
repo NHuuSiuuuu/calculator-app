@@ -9,7 +9,7 @@ A React + Vite productivity app with a calculator, an authenticated Supabase Tod
 - Web app: `apps/web`
 - API app: `apps/api`
 - Database migrations: `supabase/migrations`
-- Recommended deployment: Vercel for the web app and a Node.js host for the API
+- Recommended deployment: Vercel for the web app and `/api/*` support routes
 
 ## Features
 
@@ -80,25 +80,42 @@ Set these in Vercel and in `apps/web/.env.local` when running locally:
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
-VITE_SUPPORT_API_URL=http://127.0.0.1:8787
 ```
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
+The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
 
-Frontend environment for local development with a separate API server:
+The frontend calls same-origin `/api/*` routes for AI Support.
 
-```bash
-VITE_SUPPORT_API_URL=https://your-api-host.example.com
+RAG means Retrieval-Augmented Generation:
+
+```text
+Retrieval -> Augmented prompt -> Generation
 ```
+
+The implemented flow follows these 7 steps:
+
+```text
+1. Load Documents from uploaded .txt/.md files
+2. Chunking splits documents into smaller text chunks
+3. Embedding converts each chunk into a vector
+4. Store vectors in Supabase Postgres with pgvector
+5. Embed the user's question
+6. Retriever gets the Top K related chunks from the vector database
+7. LLM answers from Context + Question
+```
+
+Chat retrieval uses Top K vector search. It does not reject context with a high fixed similarity threshold before the LLM sees it.
 
 Backend environment:
 
 ```bash
-OPENAI_API_KEY=sk-...
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
-OPENAI_CHAT_MODEL=gpt-4.1-mini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_CHAT_MODEL=gemini-3.5-flash-lite
+EMBEDDING_DIMENSIONS=1536
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
@@ -122,7 +139,8 @@ npm ci
 The app has two services. Start the API in one terminal with the backend variables exported:
 
 ```bash
-export OPENAI_API_KEY=sk-...
+export AI_PROVIDER=gemini
+export GEMINI_API_KEY=your-gemini-api-key
 export SUPABASE_URL=https://your-project.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 npm run dev:api
@@ -150,24 +168,34 @@ npm run build
 
 ## Vercel Deployment
 
-Use these project settings so Vercel deploys both the web build and the root `/api/*` serverless function:
+Use one of these Vercel project layouts:
 
-- Framework Preset: `Vite`
-- Root Directory: repository root
-- Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
+- Repository root:
+  - Framework Preset: `Vite`
+  - Root Directory: repository root
+  - Build Command: `npm run build`
+  - Output Directory: `apps/web/dist`
+- Web app root:
+  - Framework Preset: `Vite`
+  - Root Directory: `apps/web`
+  - Build Command: `npm run build`
+  - Output Directory: `dist`
 
 Add environment variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `OPENAI_API_KEY`
+- `AI_PROVIDER` set to `gemini`
+- `GEMINI_API_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `OPENAI_EMBEDDING_MODEL` optional, defaults to `text-embedding-3-small`
-- `OPENAI_CHAT_MODEL` optional, defaults to `gpt-4.1-mini`
+- `GEMINI_EMBEDDING_MODEL` optional, defaults to `gemini-embedding-001`
+- `GEMINI_CHAT_MODEL` optional, defaults to `gemini-3.5-flash-lite`
+- `EMBEDDING_DIMENSIONS` optional, defaults to `1536`
 
-Leave `VITE_SUPPORT_API_URL` unset on Vercel when using the same project. The browser will call `/api/chat`, `/api/documents`, and related routes on the same domain.
+Do not send API keys through chat or commit them to Git. Add backend keys only in Vercel environment variables or local shell exports.
+
+Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 
 ## Tracking
 

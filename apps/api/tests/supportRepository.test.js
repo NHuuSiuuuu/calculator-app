@@ -27,6 +27,36 @@ test("repository creates conversations scoped to a user", async () => {
   assert.deepEqual(calls[0], ["insert", "support_conversations", { user_id: "user-1", title: "Question title" }]);
 });
 
+test("repository updates conversation titles scoped to a user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      return {
+        update(row) {
+          calls.push(["update", table, row]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return Promise.resolve({ error: null });
+        },
+      };
+    },
+  });
+
+  await repository.updateConversationTitle(null, "conv-1", "A very useful generated conversation title");
+
+  assert.deepEqual(calls, [
+    ["update", "support_conversations", { title: "A very useful generated conversation title" }],
+    ["eq", "id", "conv-1"],
+    ["is", "user_id", null],
+  ]);
+});
+
 test("repository maps vector matches into source objects", async () => {
   const repository = createSupportRepository({
     rpc(name, args) {
@@ -88,6 +118,131 @@ test("repository reports whether at least one ready document exists", async () =
   });
 
   assert.equal(await repository.hasReadyDocuments(), true);
+});
+
+test("repository deletes documents scoped to a nullable owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          calls.push(["maybeSingle"]);
+          return Promise.resolve({ data: { id: "doc-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteDocument(null, "doc-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "doc-1"],
+    ["is", "owner_id", null],
+    ["select", "id"],
+    ["maybeSingle"],
+  ]);
+});
+
+test("repository reports a missing RAG migration with a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: 'relation "support_documents" does not exist' },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments(),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql."
+    ),
+  );
+});
+
+test("repository reports Supabase permission errors as service role setup errors", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: "permission denied for table support_documents" },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments(),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel."
+    ),
+  );
+});
+
+test("repository reports embedding dimension mismatch as a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_document_chunks");
+      return {
+        insert() {
+          return {
+            select() {
+              return Promise.resolve({
+                data: null,
+                error: { message: "expected 1536 dimensions, not 3072" },
+              });
+            },
+          };
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.insertChunks("doc-1", [{
+      content: "Refund policy",
+      tokenEstimate: 2,
+      embedding: Array.from({ length: 3072 }, () => 0.01),
+    }]),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Embedding dimension mismatch. Gemini must return 1536-dimensional embeddings for the current Supabase schema."
+    ),
+  );
 });
 
 test("repository gets a conversation scoped by its owner", async () => {
@@ -154,6 +309,58 @@ test("repository scopes demo conversations with a null owner", async () => {
     ["eq", "id", "conv-1"],
     ["is", "user_id", null],
   ]);
+});
+
+test("repository deletes a conversation scoped by its owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "conv-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "conv-1"],
+    ["eq", "user_id", "user-1"],
+    ["select", "id"],
+  ]);
+});
+
+test("repository reports false when deleting a missing or unowned conversation", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() { return this; },
+        eq() { return this; },
+        select() { return this; },
+        maybeSingle() {
+          return Promise.resolve({ data: null, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "missing-conv"), false);
 });
 
 test("repository reconstructs persisted message sources from retrieved chunk IDs", async () => {

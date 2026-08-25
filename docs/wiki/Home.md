@@ -16,7 +16,7 @@ https://github.com/NHuuSiuuuu/calculator-app
 Browser
 → React app in apps/web
 ├→ Supabase Auth and Postgres with RLS
-└→ Node.js API in apps/api → OpenAI and Supabase pgvector
+└→ Node.js API in apps/api → Gemini and Supabase pgvector
 ```
 
 AI Support RAG uses a custom Node.js API backend. The current demo exposes AI Support without sign-in, while Supabase Auth and RLS still provide the user boundary for todos.
@@ -25,7 +25,25 @@ AI Support RAG uses a custom Node.js API backend. The current demo exposes AI Su
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; final review fixes applied
-- Scope: demo chat without sign-in, `.txt/.md` uploads, OpenAI embeddings, Supabase pgvector search, conversation history
+- Scope: demo chat without sign-in, `.txt/.md` uploads, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
+
+RAG means:
+
+```text
+Retrieval -> Augmented prompt -> Generation
+```
+
+AI Support uses this flow:
+
+```text
+Load Documents
+Chunking
+Embedding
+Store Vector DB
+Embed question
+Retriever gets Top K documents
+LLM creates the answer from Context + Question
+```
 
 ## Local Development
 
@@ -78,12 +96,11 @@ Never expose service role keys, database passwords, or JWT secrets in frontend c
 Recommended settings:
 
 - Framework Preset: `Vite`
-- Root Directory: repository root
+- Root Directory: repository root with Output Directory `apps/web/dist`, or Root Directory `apps/web` with Output Directory `dist`
 - Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
-- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
+The root and web-root catch-all API functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel.
 
 ## Tracking
 
