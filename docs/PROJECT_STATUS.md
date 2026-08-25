@@ -8,7 +8,7 @@
 - App platform: React + Vite frontend with Node.js API
 - Web app path: `apps/web`
 - Database migrations path: `supabase/migrations`
-- Recommended deploy targets: Vercel frontend and a Node.js API host
+- Recommended deploy target: Vercel web app with `/api/*` support routes
 
 ## AI Support RAG
 
@@ -60,13 +60,12 @@ npm run build
 
 ## Deployment Notes
 
-Use Vercel from the repository root with:
+Use Vercel with either supported layout:
 
-- Root Directory: repository root
-- Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
+- Repository root: Build Command `npm run build`, Output Directory `apps/web/dist`
+- `apps/web` root: Build Command `npm run build`, Output Directory `dist`
 
-The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
+The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
 
 ## Roadmap
 

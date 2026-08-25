@@ -9,7 +9,7 @@ A React + Vite productivity app with a calculator, an authenticated Supabase Tod
 - Web app: `apps/web`
 - API app: `apps/api`
 - Database migrations: `supabase/migrations`
-- Recommended deployment: Vercel for the web app and a Node.js host for the API
+- Recommended deployment: Vercel for the web app and `/api/*` support routes
 
 ## Features
 
@@ -150,12 +150,18 @@ npm run build
 
 ## Vercel Deployment
 
-Use these project settings so Vercel deploys both the web build and the root `/api/*` serverless function:
+Use one of these Vercel project layouts:
 
-- Framework Preset: `Vite`
-- Root Directory: repository root
-- Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
+- Repository root:
+  - Framework Preset: `Vite`
+  - Root Directory: repository root
+  - Build Command: `npm run build`
+  - Output Directory: `apps/web/dist`
+- Web app root:
+  - Framework Preset: `Vite`
+  - Root Directory: `apps/web`
+  - Build Command: `npm run build`
+  - Output Directory: `dist`
 
 Add environment variables:
 
@@ -167,7 +173,7 @@ Add environment variables:
 - `OPENAI_EMBEDDING_MODEL` optional, defaults to `text-embedding-3-small`
 - `OPENAI_CHAT_MODEL` optional, defaults to `gpt-4.1-mini`
 
-Leave `VITE_SUPPORT_API_URL` unset on Vercel when using the same project. The browser will call `/api/chat`, `/api/documents`, and related routes on the same domain.
+Leave `VITE_SUPPORT_API_URL` unset on Vercel when using the same project. The browser will call `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 
 ## Tracking
 

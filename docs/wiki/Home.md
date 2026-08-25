@@ -78,12 +78,11 @@ Never expose service role keys, database passwords, or JWT secrets in frontend c
 Recommended settings:
 
 - Framework Preset: `Vite`
-- Root Directory: repository root
+- Root Directory: repository root with Output Directory `apps/web/dist`, or Root Directory `apps/web` with Output Directory `dist`
 - Build Command: `npm run build`
-- Output Directory: `apps/web/dist`
 - Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-The root `api/[...path].js` function serves AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
+The root and web-root catch-all API functions serve AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
 
 ## Tracking
 
