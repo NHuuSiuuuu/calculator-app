@@ -1,6 +1,18 @@
+function createSetupError(message) {
+  const setupError = new Error(message);
+  setupError.statusCode = 500;
+  setupError.expose = true;
+  return setupError;
+}
+
 function raiseIfError(error) {
   if (error) {
-    throw new Error(error.message ?? "Supabase request failed");
+    const message = error.message ?? "Supabase request failed";
+    if (/relation "support_(documents|document_chunks|conversations|messages)" does not exist/i.test(message)
+      || /match_support_chunks/i.test(message)) {
+      throw createSetupError("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+    }
+    throw new Error(message);
   }
 }
 

@@ -6,6 +6,10 @@ import { createVercelHandler } from "../src/vercelHandler.js";
 
 const vercelApiUrl = new URL("../../../api/[...path].js", import.meta.url);
 const webRootVercelApiUrl = new URL("../../web/api/[...path].js", import.meta.url);
+const uploadApiUrl = new URL("../../../api/documents/upload.js", import.meta.url);
+const webRootUploadApiUrl = new URL("../../web/api/documents/upload.js", import.meta.url);
+const messagesApiUrl = new URL("../../../api/conversations/[id]/messages.js", import.meta.url);
+const webRootMessagesApiUrl = new URL("../../web/api/conversations/[id]/messages.js", import.meta.url);
 
 function createMockResponse() {
   return {
@@ -36,6 +40,15 @@ test("web-root Vercel catch-all API function is available for apps/web root depl
   const source = await readFile(webRootVercelApiUrl, "utf8");
   assert.match(source, /createProductionApiServer/);
   assert.match(source, /createVercelHandler/);
+});
+
+test("nested Vercel API functions are available for upload and conversation messages", async () => {
+  for (const routeUrl of [uploadApiUrl, webRootUploadApiUrl, messagesApiUrl, webRootMessagesApiUrl]) {
+    await access(routeUrl);
+    const source = await readFile(routeUrl, "utf8");
+    assert.match(source, /createProductionApiServer/);
+    assert.match(source, /createVercelHandler/);
+  }
 });
 
 test("Vercel handler returns JSON when API setup fails before routing", () => {

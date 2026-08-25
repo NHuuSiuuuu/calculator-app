@@ -170,7 +170,7 @@ export function createApiServer({ authService, repository, openAiClient }) {
     } catch (error) {
       const statusCode = error.statusCode ?? 500;
       sendJson(response, statusCode, {
-        error: statusCode === 500 ? "Internal server error" : error.message ?? "Internal server error",
+        error: statusCode === 500 && !error.expose ? "Internal server error" : error.message ?? "Internal server error",
       });
     }
   });

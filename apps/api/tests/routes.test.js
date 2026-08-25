@@ -518,3 +518,25 @@ test("HTTP server hides unclassified internal error details", async () => {
     assert.deepEqual(await response.json(), { error: "Internal server error" });
   });
 });
+
+test("HTTP server exposes classified setup errors", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async listDocuments() {
+        const error = new Error("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+        error.statusCode = 500;
+        error.expose = true;
+        throw error;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents`);
+
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), {
+      error: "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.",
+    });
+  });
+});

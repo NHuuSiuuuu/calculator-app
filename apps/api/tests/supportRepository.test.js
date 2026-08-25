@@ -90,6 +90,32 @@ test("repository reports whether at least one ready document exists", async () =
   assert.equal(await repository.hasReadyDocuments(), true);
 });
 
+test("repository reports a missing RAG migration with a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: 'relation "support_documents" does not exist' },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments(),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql."
+    ),
+  );
+});
+
 test("repository gets a conversation scoped by its owner", async () => {
   const calls = [];
   const repository = createSupportRepository({
