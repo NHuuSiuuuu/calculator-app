@@ -149,21 +149,19 @@ export function AiSupportPanel({ session, supportApi }) {
   }
 
   return (
-    <div className="support-tool">
-      <header className="support-header">
-        <div>
-          <p className="eyebrow">Company knowledge</p>
-          <h1>AI Support</h1>
-          <p>Hỏi theo tài liệu công ty</p>
+    <div className="support-chat-shell">
+      <aside className="support-sidebar" aria-label="Conversations">
+        <div className="support-sidebar-section">
+          <div className="support-sidebar-header">
+            <div>
+              <p className="eyebrow">Company knowledge</p>
+              <h1>AI Support</h1>
+            </div>
+            <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
+          </div>
         </div>
-        <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
-      </header>
 
-      {error ? <p className="support-message-status is-error" role="alert">{error}</p> : null}
-      {statusMessage ? <p className="support-message-status" aria-live="polite">{statusMessage}</p> : null}
-
-      <div className="support-layout">
-        <aside className="support-sidebar" aria-label="Conversations">
+        <div className="support-sidebar-section">
           <h2>Cuộc trò chuyện</h2>
           <div className="support-conversations">
             {conversations.length === 0 ? <p className="support-empty">No conversations yet.</p> : null}
@@ -178,65 +176,81 @@ export function AiSupportPanel({ session, supportApi }) {
               </button>
             ))}
           </div>
-        </aside>
-
-        <div className="support-main">
-          <section className="support-chat" aria-label="Support chat">
-            <div className="support-messages" aria-live="polite">
-              {messages.length === 0 ? <p className="support-empty">Ask a question about company documents.</p> : null}
-              {messages.map((message) => (
-                <article key={message.id} className={`support-message${message.role === "user" ? " is-user" : ""}`}>
-                  <p>{message.content}</p>
-                  {message.sources?.length ? (
-                    <div className="support-sources">
-                      <strong>Nguồn:</strong>
-                      {message.sources.map((source) => (
-                        <span key={source.chunkId} className="support-source-chip">{source.filename}</span>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-            <form className="support-compose" onSubmit={submitMessage}>
-              <label className="sr-only" htmlFor="support-message">Câu hỏi</label>
-              <input
-                id="support-message"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Ask about company documents"
-                maxLength={4000}
-                disabled={isSending}
-              />
-              <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
-            </form>
-          </section>
-
-          {isAdmin ? <section className="support-admin" aria-label="Company documents">
-            <div className="support-admin__header">
-              <h2>Tài liệu công ty</h2>
-              <label className="support-upload">
-                <span>Upload .txt hoặc .md</span>
-                <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={uploadDocument} disabled={isUploading} />
-              </label>
-            </div>
-            <ul className="support-documents">
-              {documents.length === 0 ? <li className="support-empty">No documents available.</li> : null}
-              {documents.map((document) => (
-                <li key={document.id} className="support-document">
-                  <strong>{document.filename}</strong>
-                  <div className="support-document__metadata">
-                    <span className={`support-document__status is-${document.status}`}>{document.status}</span>
-                    <span>{document.chunk_count} chunks</span>
-                    <time dateTime={document.created_at}>{formatDocumentTime(document.created_at)}</time>
-                  </div>
-                  {document.error_message ? <p className="support-document__error">{document.error_message}</p> : null}
-                </li>
-              ))}
-            </ul>
-          </section> : null}
         </div>
-      </div>
+
+        {isAdmin ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="Company documents">
+          <div className="support-admin__header">
+            <h2>Tài liệu công ty</h2>
+            <label className="support-upload">
+              <span>Upload .txt hoặc .md</span>
+              <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={uploadDocument} disabled={isUploading} />
+            </label>
+          </div>
+          <ul className="support-documents">
+            {documents.length === 0 ? <li className="support-empty">No documents available.</li> : null}
+            {documents.map((document) => (
+              <li key={document.id} className="support-document">
+                <strong>{document.filename}</strong>
+                <div className="support-document__metadata">
+                  <span className={`support-document__status is-${document.status}`}>{document.status}</span>
+                  <span>{document.chunk_count} chunks</span>
+                  <time dateTime={document.created_at}>{formatDocumentTime(document.created_at)}</time>
+                </div>
+                {document.error_message ? <p className="support-document__error">{document.error_message}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </section> : null}
+      </aside>
+
+      <section className="support-chat-panel" aria-label="Support chat">
+        <header className="support-chat-header">
+          <div>
+            <h2>Hỏi theo tài liệu công ty</h2>
+            <p>{selectedConversationId ? "Conversation context loaded" : "New conversation"}</p>
+          </div>
+        </header>
+
+        <div className="support-notices">
+          {error ? <p className="support-message-status is-error" role="alert">{error}</p> : null}
+          {statusMessage ? <p className="support-message-status" aria-live="polite">{statusMessage}</p> : null}
+        </div>
+
+        <div className="support-messages" aria-live="polite">
+          {messages.length === 0 ? (
+            <div className="support-empty-state">
+              <h1>AI Support</h1>
+              <p>Ask a question about company documents.</p>
+            </div>
+          ) : null}
+          {messages.map((message) => (
+            <article key={message.id} className={`support-message${message.role === "user" ? " is-user" : ""}`}>
+              <p>{message.content}</p>
+              {message.sources?.length ? (
+                <div className="support-sources">
+                  <strong>Nguồn:</strong>
+                  {message.sources.map((source) => (
+                    <span key={source.chunkId} className="support-source-chip">{source.filename}</span>
+                  ))}
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+
+        <form className="support-compose" onSubmit={submitMessage}>
+          <label className="sr-only" htmlFor="support-message">Câu hỏi</label>
+          <input
+            id="support-message"
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Ask about documents"
+            maxLength={4000}
+            disabled={isSending}
+          />
+          <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
+        </form>
+      </section>
     </div>
   );
 }

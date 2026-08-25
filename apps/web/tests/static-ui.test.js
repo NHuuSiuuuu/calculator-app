@@ -17,6 +17,17 @@ test("README documents React auth deployment environment", () => {
   assert.match(readme, /VITE_SUPABASE_ANON_KEY/);
 });
 
+test("AI Support uses a ChatGPT-style chat shell", () => {
+  const component = readFileSync(new URL("../src/features/support/AiSupportPanel.jsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/App.css", import.meta.url), "utf8");
+
+  assert.match(component, /className="support-chat-shell"/);
+  assert.match(component, /className="support-chat-panel"/);
+  assert.match(component, /className="support-sidebar-section support-sidebar-section--documents"/);
+  assert.match(css, /\.support-chat-shell\s*{/);
+  assert.match(css, /\.support-compose\s*{[\s\S]*?position:\s*sticky/);
+});
+
 test("Supabase migration upgrades existing todos to user-owned RLS", () => {
   const sql = readFileSync(
     new URL("../../../supabase/migrations/0001_user_owned_todos.sql", import.meta.url),
