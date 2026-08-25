@@ -116,6 +116,32 @@ test("repository reports a missing RAG migration with a setup error", async () =
   );
 });
 
+test("repository reports Supabase permission errors as service role setup errors", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: "permission denied for table support_documents" },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments(),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel."
+    ),
+  );
+});
+
 test("repository gets a conversation scoped by its owner", async () => {
   const calls = [];
   const repository = createSupportRepository({

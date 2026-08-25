@@ -12,6 +12,9 @@ function raiseIfError(error) {
       || /match_support_chunks/i.test(message)) {
       throw createSetupError("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
     }
+    if (/permission denied|row-level security|invalid api key|invalid jwt|jwt/i.test(message)) {
+      throw createSetupError("Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel.");
+    }
     throw new Error(message);
   }
 }
