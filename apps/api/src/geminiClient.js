@@ -53,10 +53,8 @@ export function createGeminiClient(config, fetchImpl = globalThis.fetch) {
         content: {
           parts: [textPart(input)],
         },
-        embedContentConfig: {
-          taskType,
-          outputDimensionality: config.embeddingDimensions,
-        },
+        task_type: taskType,
+        output_dimensionality: config.embeddingDimensions,
       });
       if (!Array.isArray(payload.embedding?.values)) {
         const error = new Error("Gemini embedding response did not include embedding.values");

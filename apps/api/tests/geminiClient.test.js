@@ -29,10 +29,8 @@ test("createGeminiClient creates 1536-dimensional document embeddings", async ()
     content: {
       parts: [{ text: "Company policy" }],
     },
-    embedContentConfig: {
-      taskType: "RETRIEVAL_DOCUMENT",
-      outputDimensionality: 1536,
-    },
+    task_type: "RETRIEVAL_DOCUMENT",
+    output_dimensionality: 1536,
   });
 });
 
