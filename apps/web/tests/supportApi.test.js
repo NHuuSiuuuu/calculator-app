@@ -105,3 +105,25 @@ test("support API loads the current user's backend-authoritative role", async ()
   assert.deepEqual(await api.getCurrentUser(), { user: { id: "user-1", role: "user" } });
   assert.equal(calls[0].url, "https://api.example.com/api/me");
 });
+
+test("support API deletes conversations with the bearer token", async () => {
+  const calls = [];
+  const api = createSupportApi({
+    baseUrl: "https://api.example.com",
+    getAccessToken: () => "access-token",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        async json() {
+          return { deleted: true };
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(await api.deleteConversation("conv-1"), { deleted: true });
+  assert.equal(calls[0].url, "https://api.example.com/api/conversations/conv-1");
+  assert.equal(calls[0].options.method, "DELETE");
+  assert.equal(calls[0].options.headers.authorization, "Bearer access-token");
+});

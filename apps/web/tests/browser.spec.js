@@ -173,6 +173,59 @@ test("support can start a new chat from an existing conversation", async ({ page
   await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
 });
 
+test("support can delete the selected conversation", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    let conversations = [{ id: "conv-1", title: "Refund policy" }];
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations }) };
+      }
+      if (String(url).endsWith("/api/conversations/conv-1") && options.method === "DELETE") {
+        conversations = [];
+        return { ok: true, json: async () => ({ deleted: true }) };
+      }
+      if (String(url).includes("/api/conversations/conv-1/messages")) {
+        return {
+          ok: true,
+          json: async () => ({ messages: [{ id: "message-1", role: "assistant", content: "Existing answer" }] }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Refund policy" }).click();
+  await expect(page.getByText("Existing answer", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Xóa cuộc trò chuyện" }).click();
+
+  await expect(page.getByRole("button", { name: "Refund policy" })).toHaveCount(0);
+  await expect(page.getByText("Existing answer", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
+});
+
 test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {

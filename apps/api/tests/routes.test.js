@@ -535,6 +535,48 @@ test("HTTP chat accepts demo requests without auth", async () => {
   assert.deepEqual(calls[0], ["createConversation", null, "What is the refund window?"]);
 });
 
+test("HTTP conversation delete removes a demo conversation", async () => {
+  const calls = [];
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteConversation(userId, conversationId) {
+        calls.push(["deleteConversation", userId, conversationId]);
+        return true;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/conversations/conv-1`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+  });
+
+  assert.deepEqual(calls, [["deleteConversation", null, "conv-1"]]);
+});
+
+test("HTTP conversation delete returns not found for missing demo conversations", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteConversation() {
+        return false;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/conversations/missing-conv`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "Conversation not found" });
+  });
+});
+
 test("HTTP server hides unclassified internal error details", async () => {
   await withApiServer({
     authService: {

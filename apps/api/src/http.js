@@ -10,7 +10,7 @@ function corsHeaders() {
   return {
     "access-control-allow-origin": "*",
     "access-control-allow-headers": "authorization, content-type",
-    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
   };
 }
 
@@ -119,6 +119,12 @@ function routeNotFound() {
   return error;
 }
 
+function conversationNotFound() {
+  const error = new Error("Conversation not found");
+  error.statusCode = 404;
+  return error;
+}
+
 export function createApiServer({ authService, repository, openAiClient }) {
   return http.createServer(async (request, response) => {
     try {
@@ -163,6 +169,16 @@ export function createApiServer({ authService, repository, openAiClient }) {
         sendJson(response, 200, {
           messages: await repository.getMessages(DEMO_SUPPORT_USER.id, decodeURIComponent(messagesMatch[1])),
         });
+        return;
+      }
+
+      const conversationMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
+      if (request.method === "DELETE" && conversationMatch) {
+        const deleted = await repository.deleteConversation(DEMO_SUPPORT_USER.id, decodeURIComponent(conversationMatch[1]));
+        if (!deleted) {
+          throw conversationNotFound();
+        }
+        sendJson(response, 200, { deleted: true });
         return;
       }
 

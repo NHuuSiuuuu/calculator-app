@@ -241,6 +241,58 @@ test("repository scopes demo conversations with a null owner", async () => {
   ]);
 });
 
+test("repository deletes a conversation scoped by its owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "conv-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "conv-1"],
+    ["eq", "user_id", "user-1"],
+    ["select", "id"],
+  ]);
+});
+
+test("repository reports false when deleting a missing or unowned conversation", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() { return this; },
+        eq() { return this; },
+        select() { return this; },
+        maybeSingle() {
+          return Promise.resolve({ data: null, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "missing-conv"), false);
+});
+
 test("repository reconstructs persisted message sources from retrieved chunk IDs", async () => {
   const repository = createSupportRepository({
     from(table) {

@@ -80,6 +80,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingConversationId, setDeletingConversationId] = useState(null);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [theme, setTheme] = useState("dark");
@@ -145,6 +146,30 @@ export function AiSupportPanel({ session, supportApi }) {
     setInput("");
     setError("");
     setStatusMessage("");
+  }
+
+  async function deleteConversation(conversation) {
+    const title = conversation.title || "Untitled conversation";
+    if (!window.confirm(`Xóa cuộc trò chuyện "${title}"?`)) return;
+
+    conversationRequestGuard.current.begin();
+    setError("");
+    setStatusMessage("Deleting conversation...");
+    setDeletingConversationId(conversation.id);
+    try {
+      await api.deleteConversation(conversation.id);
+      setConversations((current) => current.filter((existing) => existing.id !== conversation.id));
+      if (selectedConversationId === conversation.id) {
+        setSelectedConversationId(null);
+        setMessages([]);
+      }
+      setStatusMessage("Conversation deleted.");
+    } catch (nextError) {
+      setError(nextError.message);
+      setStatusMessage("");
+    } finally {
+      setDeletingConversationId(null);
+    }
   }
 
   async function submitMessage(event) {
@@ -249,14 +274,28 @@ export function AiSupportPanel({ session, supportApi }) {
           <div className="support-conversations">
             {conversations.length === 0 ? <p className="support-empty">No conversations yet.</p> : null}
             {conversations.map((conversation) => (
-              <button
+              <div
                 key={conversation.id}
-                className={`support-conversation${selectedConversationId === conversation.id ? " is-selected" : ""}`}
-                type="button"
-                onClick={() => selectConversation(conversation.id)}
+                className={`support-conversation-row${selectedConversationId === conversation.id ? " is-selected" : ""}`}
               >
-                {conversation.title || "Untitled conversation"}
-              </button>
+                <button
+                  className="support-conversation"
+                  type="button"
+                  onClick={() => selectConversation(conversation.id)}
+                  disabled={deletingConversationId === conversation.id}
+                >
+                  {conversation.title || "Untitled conversation"}
+                </button>
+                <button
+                  className="support-conversation-delete"
+                  type="button"
+                  aria-label="Xóa cuộc trò chuyện"
+                  onClick={() => deleteConversation(conversation)}
+                  disabled={deletingConversationId === conversation.id}
+                >
+                  Xóa
+                </button>
+              </div>
             ))}
           </div>
         </div>

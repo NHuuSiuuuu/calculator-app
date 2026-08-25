@@ -131,6 +131,18 @@ export function createSupportRepository(supabase) {
       return data;
     },
 
+    async deleteConversation(userId, conversationId) {
+      const query = scopeByNullableUser(
+        supabase.from("support_conversations")
+          .delete()
+          .eq("id", conversationId),
+        userId,
+      );
+      const { data, error } = await query.select("id").maybeSingle();
+      raiseIfError(error);
+      return Boolean(data);
+    },
+
     async getMessages(userId, conversationId) {
       const query = supabase.from("support_conversations")
         .select("id")

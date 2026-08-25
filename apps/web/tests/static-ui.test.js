@@ -49,7 +49,7 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.match(css, /\.support-chat-shell\.is-light\s*{/);
   assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-scrollbar-thumb:/);
   assert.match(css, /\.support-sidebar::-webkit-scrollbar-thumb\s*{/);
-  assert.match(css, /\.support-conversation \+ \.support-conversation\s*{/);
+  assert.match(css, /\.support-conversation-row \+ \.support-conversation-row\s*{/);
   assert.match(css, /\.support-chat-stage\s*{/);
 });
 

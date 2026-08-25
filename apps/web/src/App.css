@@ -791,6 +791,21 @@ input {
   font-size: 0.78rem;
 }
 
+.support-conversation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  border-radius: 8px;
+}
+
+.support-conversation-row + .support-conversation-row {
+  border-top: 1px solid var(--support-border);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 .support-conversation {
   width: 100%;
   min-height: 38px;
@@ -808,18 +823,37 @@ input {
   white-space: nowrap;
 }
 
-.support-conversation + .support-conversation {
-  border-top: 1px solid var(--support-border);
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-}
-
-.support-conversation.is-selected {
+.support-conversation-row.is-selected .support-conversation {
   background: var(--support-action-bg);
 }
 
 .support-conversation:hover {
   background: var(--support-conversation-hover);
+}
+
+.support-conversation-delete {
+  min-width: 42px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--support-text-muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.support-conversation-delete:hover {
+  border-color: var(--support-border);
+  background: var(--support-action-bg);
+  color: var(--support-text);
+}
+
+.support-conversation:disabled,
+.support-conversation-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .support-notices {

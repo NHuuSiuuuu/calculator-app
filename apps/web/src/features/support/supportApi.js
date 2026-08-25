@@ -44,6 +44,11 @@ export function createSupportApi({
     listMessages(conversationId) {
       return request(`/api/conversations/${conversationId}/messages`);
     },
+    deleteConversation(conversationId) {
+      return request(`/api/conversations/${conversationId}`, {
+        method: "DELETE",
+      });
+    },
     listDocuments() {
       return request("/api/documents");
     },
