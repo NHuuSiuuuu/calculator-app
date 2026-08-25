@@ -23,6 +23,24 @@ test("support API defaults to same-origin routes", async () => {
   assert.equal(calls[0].url, "/api/documents");
 });
 
+test("support API errors include the failed route and status", async () => {
+  const api = createSupportApi({
+    getAccessToken: () => "",
+    fetchImpl: async () => ({
+      ok: false,
+      status: 404,
+      async json() {
+        return {};
+      },
+    }),
+  });
+
+  await assert.rejects(
+    () => api.listDocuments(),
+    /\/api\/documents failed with 404/,
+  );
+});
+
 test("support API sends bearer token for chat", async () => {
   const calls = [];
   const api = createSupportApi({

@@ -1,7 +1,4 @@
 import { createProductionApiServer } from "../../api/src/app.js";
+import { createVercelHandler } from "../../api/src/vercelHandler.js";
 
-const server = createProductionApiServer();
-
-export default function handler(request, response) {
-  server.emit("request", request, response);
-}
+export default createVercelHandler(createProductionApiServer);

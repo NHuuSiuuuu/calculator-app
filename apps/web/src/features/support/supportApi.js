@@ -22,7 +22,8 @@ export function createSupportApi({
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.error ?? `Request failed with ${response.status}`);
+      const detail = payload.error ? `: ${payload.error}` : "";
+      throw new Error(`${path} failed with ${response.status}${detail}`);
     }
     return payload;
   }
