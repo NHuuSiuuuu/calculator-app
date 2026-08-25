@@ -170,6 +170,34 @@ test("signed-out users can use demo AI Support and see document upload", async (
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
 });
 
+test("demo AI Support keeps document upload visible when the API is failing", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "Request failed with 500" }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.getByRole("alert")).toContainText("Request failed with 500");
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+});
+
 test("signed-in users can chat with AI Support and see sources", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {

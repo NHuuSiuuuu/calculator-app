@@ -22,7 +22,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [documents, setDocuments] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -49,7 +49,7 @@ export function AiSupportPanel({ session, supportApi }) {
       try {
         const currentUserPayload = await api.getCurrentUser();
         if (!isCurrent) return;
-        const nextIsAdmin = currentUserPayload?.user?.role === "admin";
+        const nextIsAdmin = currentUserPayload?.user?.role !== "user";
         setIsAdmin(nextIsAdmin);
         if (nextIsAdmin) {
           const documentsPayload = await api.listDocuments();
