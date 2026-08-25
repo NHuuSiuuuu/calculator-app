@@ -49,6 +49,11 @@ export function createSupportApi({
         method: "DELETE",
       });
     },
+    deleteDocument(documentId) {
+      return request(`/api/documents/${documentId}`, {
+        method: "DELETE",
+      });
+    },
     listDocuments() {
       return request("/api/documents");
     },

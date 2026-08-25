@@ -8,6 +8,8 @@ const vercelApiUrl = new URL("../../../api/[...path].js", import.meta.url);
 const webRootVercelApiUrl = new URL("../../web/api/[...path].js", import.meta.url);
 const uploadApiUrl = new URL("../../../api/documents/upload.js", import.meta.url);
 const webRootUploadApiUrl = new URL("../../web/api/documents/upload.js", import.meta.url);
+const documentApiUrl = new URL("../../../api/documents/[id].js", import.meta.url);
+const webRootDocumentApiUrl = new URL("../../web/api/documents/[id].js", import.meta.url);
 const conversationApiUrl = new URL("../../../api/conversations/[id].js", import.meta.url);
 const webRootConversationApiUrl = new URL("../../web/api/conversations/[id].js", import.meta.url);
 const messagesApiUrl = new URL("../../../api/conversations/[id]/messages.js", import.meta.url);
@@ -48,6 +50,8 @@ test("nested Vercel API functions are available for upload and conversations", a
   for (const routeUrl of [
     uploadApiUrl,
     webRootUploadApiUrl,
+    documentApiUrl,
+    webRootDocumentApiUrl,
     conversationApiUrl,
     webRootConversationApiUrl,
     messagesApiUrl,

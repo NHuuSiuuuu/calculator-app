@@ -89,6 +89,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingConversationId, setDeletingConversationId] = useState(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState(null);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [theme, setTheme] = useState(readStoredSupportTheme);
@@ -119,11 +120,11 @@ export function AiSupportPanel({ session, supportApi }) {
     setIsScrollToBottomVisible(distanceFromBottom > SCROLL_BOTTOM_THRESHOLD);
   }
 
-  function scrollMessagesToBottom() {
+  function scrollMessagesToBottom(behavior = "auto") {
     const messagesElement = messagesRef.current;
     if (!messagesElement) return;
 
-    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior: "auto" });
+    messagesElement.scrollTo({ top: messagesElement.scrollHeight, behavior });
     setIsScrollToBottomVisible(false);
   }
 
@@ -283,6 +284,25 @@ export function AiSupportPanel({ session, supportApi }) {
     }
   }
 
+  async function deleteDocument(document) {
+    const filename = document.filename || "Untitled document";
+    if (!window.confirm(`Xóa tài liệu "${filename}"?`)) return;
+
+    setError("");
+    setStatusMessage("Deleting document...");
+    setDeletingDocumentId(document.id);
+    try {
+      await api.deleteDocument(document.id);
+      setDocuments((current) => current.filter((existing) => existing.id !== document.id));
+      setStatusMessage("");
+    } catch (nextError) {
+      setError(nextError.message);
+      setStatusMessage("");
+    } finally {
+      setDeletingDocumentId(null);
+    }
+  }
+
   return (
     <div className={`support-chat-shell is-${theme}`}>
       <aside className="support-sidebar" aria-label="Conversations">
@@ -361,7 +381,18 @@ export function AiSupportPanel({ session, supportApi }) {
             {documents.length === 0 ? <li className="support-empty">No documents available.</li> : null}
             {documents.map((document) => (
               <li key={document.id} className="support-document">
-                <strong>{document.filename}</strong>
+                <div className="support-document__header">
+                  <strong>{document.filename}</strong>
+                  <button
+                    className="support-document-delete"
+                    type="button"
+                    aria-label={`Xóa tài liệu ${document.filename}`}
+                    onClick={() => deleteDocument(document)}
+                    disabled={deletingDocumentId === document.id}
+                  >
+                    Xóa
+                  </button>
+                </div>
                 <div className="support-document__metadata">
                   <span className={`support-document__status is-${document.status}`}>{document.status}</span>
                   <span>{document.chunk_count} chunks</span>
@@ -417,7 +448,7 @@ export function AiSupportPanel({ session, supportApi }) {
               className="support-scroll-bottom"
               type="button"
               aria-label="Cuộn xuống cuối cuộc trò chuyện"
-              onClick={scrollMessagesToBottom}
+              onClick={() => scrollMessagesToBottom("smooth")}
             >
               <span aria-hidden="true">↓</span>
             </button>

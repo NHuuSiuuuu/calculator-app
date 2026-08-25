@@ -722,6 +722,68 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
   await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
 });
 
+test("admin support dashboard can delete an old company document", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "admin-token",
+      user: { id: "admin-1", email: "admin@example.com" },
+    };
+    let documents = [{
+      id: "doc-old",
+      filename: "old-policy.md",
+      status: "ready",
+      chunk_count: 3,
+      error_message: null,
+      created_at: "2026-08-24T10:15:00.000Z",
+    }];
+    window.supportDocumentRequests = [];
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      const path = String(url);
+      window.supportDocumentRequests.push({ url: path, method: options.method ?? "GET" });
+      if (path.endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
+      }
+      if (path.endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (path.endsWith("/api/documents/doc-old") && options.method === "DELETE") {
+        documents = [];
+        return { ok: true, json: async () => ({ deleted: true }) };
+      }
+      if (path.endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const documents = page.getByRole("region", { name: "Company documents" });
+  await expect(documents.getByText("old-policy.md")).toBeVisible();
+  await documents.getByRole("button", { name: "Xóa tài liệu old-policy.md" }).click();
+
+  await expect(documents.getByText("old-policy.md")).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportDocumentRequests)).toContainEqual({
+    url: "/api/documents/doc-old",
+    method: "DELETE",
+  });
+});
+
 test("support discards a stale conversation response after the account changes", async ({ page }) => {
   await page.addInitScript(() => {
     const firstSession = {

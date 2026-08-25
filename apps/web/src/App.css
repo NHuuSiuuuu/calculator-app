@@ -770,6 +770,20 @@ input {
   overflow-wrap: anywhere;
 }
 
+.support-document__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.support-document__header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .support-document__metadata {
   display: flex;
   flex-wrap: wrap;
@@ -795,6 +809,29 @@ input {
 .support-document__error {
   margin: 0;
   font-size: 0.78rem;
+}
+
+.support-document-delete {
+  min-width: 42px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--support-text-muted);
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.support-document-delete:hover {
+  background: var(--support-action-bg);
+  color: var(--support-text);
+}
+
+.support-document-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .support-conversation-row {

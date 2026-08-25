@@ -541,6 +541,52 @@ test("HTTP document list accepts demo requests without admin auth", async () => 
   assert.equal(listed, true);
 });
 
+test("HTTP document delete removes a demo document", async () => {
+  const calls = [];
+  await withApiServer({
+    authService: {
+      async requireAdmin() {
+        throw new Error("should not require admin auth in demo mode");
+      },
+    },
+    repository: {
+      async deleteDocument(ownerId, documentId) {
+        calls.push(["deleteDocument", ownerId, documentId]);
+        return true;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents/doc-1`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+  });
+
+  assert.deepEqual(calls, [["deleteDocument", null, "doc-1"]]);
+});
+
+test("HTTP document delete returns not found for missing demo documents", async () => {
+  await withApiServer({
+    authService: {},
+    repository: {
+      async deleteDocument() {
+        return false;
+      },
+    },
+    openAiClient: {},
+  }, async (origin) => {
+    const response = await fetch(`${origin}/api/documents/missing-doc`, {
+      method: "DELETE",
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "Document not found" });
+  });
+});
+
 test("HTTP current-user endpoint returns demo admin without auth", async () => {
   await withApiServer({
     authService: {

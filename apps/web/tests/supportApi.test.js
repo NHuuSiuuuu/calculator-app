@@ -127,3 +127,25 @@ test("support API deletes conversations with the bearer token", async () => {
   assert.equal(calls[0].options.method, "DELETE");
   assert.equal(calls[0].options.headers.authorization, "Bearer access-token");
 });
+
+test("support API deletes documents with the bearer token", async () => {
+  const calls = [];
+  const api = createSupportApi({
+    baseUrl: "https://api.example.com",
+    getAccessToken: () => "access-token",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        async json() {
+          return { deleted: true };
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(await api.deleteDocument("doc-1"), { deleted: true });
+  assert.equal(calls[0].url, "https://api.example.com/api/documents/doc-1");
+  assert.equal(calls[0].options.method, "DELETE");
+  assert.equal(calls[0].options.headers.authorization, "Bearer access-token");
+});

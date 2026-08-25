@@ -120,6 +120,46 @@ test("repository reports whether at least one ready document exists", async () =
   assert.equal(await repository.hasReadyDocuments(), true);
 });
 
+test("repository deletes documents scoped to a nullable owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          calls.push(["maybeSingle"]);
+          return Promise.resolve({ data: { id: "doc-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteDocument(null, "doc-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "doc-1"],
+    ["is", "owner_id", null],
+    ["select", "id"],
+    ["maybeSingle"],
+  ]);
+});
+
 test("repository reports a missing RAG migration with a setup error", async () => {
   const repository = createSupportRepository({
     from(table) {

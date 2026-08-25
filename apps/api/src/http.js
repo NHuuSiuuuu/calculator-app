@@ -125,6 +125,12 @@ function conversationNotFound() {
   return error;
 }
 
+function documentNotFound() {
+  const error = new Error("Document not found");
+  error.statusCode = 404;
+  return error;
+}
+
 export function createApiServer({ authService, repository, openAiClient }) {
   return http.createServer(async (request, response) => {
     try {
@@ -143,6 +149,16 @@ export function createApiServer({ authService, repository, openAiClient }) {
 
       if (request.method === "GET" && url.pathname === "/api/documents") {
         sendJson(response, 200, { documents: await repository.listDocuments() });
+        return;
+      }
+
+      const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
+      if (request.method === "DELETE" && documentMatch) {
+        const deleted = await repository.deleteDocument(DEMO_SUPPORT_USER.id, decodeURIComponent(documentMatch[1]));
+        if (!deleted) {
+          throw documentNotFound();
+        }
+        sendJson(response, 200, { deleted: true });
         return;
       }
 

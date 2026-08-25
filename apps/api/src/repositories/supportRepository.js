@@ -30,6 +30,10 @@ function scopeByNullableUser(query, userId) {
   return userId === null ? query.is("user_id", null) : query.eq("user_id", userId);
 }
 
+function scopeByNullableOwner(query, ownerId) {
+  return ownerId === null ? query.is("owner_id", null) : query.eq("owner_id", ownerId);
+}
+
 export function createSupportRepository(supabase) {
   return {
     async createDocument({ ownerId, filename, contentType }) {
@@ -101,6 +105,18 @@ export function createSupportRepository(supabase) {
         .limit(1);
       raiseIfError(error);
       return (data ?? []).length > 0;
+    },
+
+    async deleteDocument(ownerId, documentId) {
+      const query = scopeByNullableOwner(
+        supabase.from("support_documents")
+          .delete()
+          .eq("id", documentId),
+        ownerId,
+      );
+      const { data, error } = await query.select("id").maybeSingle();
+      raiseIfError(error);
+      return Boolean(data);
     },
 
     async createConversation(userId, title) {

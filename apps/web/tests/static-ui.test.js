@@ -48,6 +48,8 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.match(component, /aria-label="Toggle support theme"/);
   assert.match(component, /className="support-conversation-title"/);
   assert.match(component, /className="support-conversation-title-track"/);
+  assert.match(component, /aria-label="Cuộn xuống cuối cuộc trò chuyện"/);
+  assert.match(component, /scrollMessagesToBottom\("smooth"\)/);
   assert.match(component, /autoComplete="off"/);
   assert.match(component, /name="support-chat-message"/);
   assert.match(component, /spellCheck="false"/);
