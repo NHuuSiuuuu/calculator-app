@@ -3,6 +3,26 @@ import test from "node:test";
 
 import { createSupportApi } from "../src/features/support/supportApi.js";
 
+test("support API defaults to same-origin routes", async () => {
+  const calls = [];
+  const api = createSupportApi({
+    getAccessToken: () => "",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        async json() {
+          return { documents: [] };
+        },
+      };
+    },
+  });
+
+  await api.listDocuments();
+
+  assert.equal(calls[0].url, "/api/documents");
+});
+
 test("support API sends bearer token for chat", async () => {
   const calls = [];
   const api = createSupportApi({

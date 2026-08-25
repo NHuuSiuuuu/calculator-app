@@ -80,18 +80,13 @@ Set these in Vercel and in `apps/web/.env.local` when running locally:
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
-VITE_SUPPORT_API_URL=http://127.0.0.1:8787
 ```
 
 ## AI Support RAG Setup
 
 The AI Support feature uses a backend API so OpenAI and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
 
-Frontend environment for local development with a separate API server:
-
-```bash
-VITE_SUPPORT_API_URL=https://your-api-host.example.com
-```
+The frontend calls same-origin `/api/*` routes for AI Support.
 
 Backend environment:
 
@@ -173,7 +168,7 @@ Add environment variables:
 - `OPENAI_EMBEDDING_MODEL` optional, defaults to `text-embedding-3-small`
 - `OPENAI_CHAT_MODEL` optional, defaults to `gpt-4.1-mini`
 
-Leave `VITE_SUPPORT_API_URL` unset on Vercel when using the same project. The browser will call `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
+Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 
 ## Tracking
 

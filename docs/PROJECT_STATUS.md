@@ -65,7 +65,7 @@ Use Vercel with either supported layout:
 - Repository root: Build Command `npm run build`, Output Directory `apps/web/dist`
 - `apps/web` root: Build Command `npm run build`, Output Directory `dist`
 
-The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain, so `VITE_SUPPORT_API_URL` can stay unset on Vercel.
+The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel.
 
 ## Roadmap
 

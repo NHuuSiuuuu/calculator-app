@@ -3,7 +3,7 @@ function normalizeBaseUrl(baseUrl) {
 }
 
 export function createSupportApi({
-  baseUrl = import.meta.env.VITE_SUPPORT_API_URL,
+  baseUrl = "",
   getAccessToken,
   fetchImpl = globalThis.fetch,
 }) {
