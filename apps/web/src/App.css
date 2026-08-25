@@ -547,7 +547,8 @@ input {
 .support-empty-state h1,
 .support-empty-state p,
 .support-sidebar h2,
-.support-message p {
+.support-message p,
+.support-message ul {
   margin: 0;
 }
 
@@ -724,6 +725,25 @@ input {
   border-radius: 8px;
   background: #f3f4f6;
   line-height: 1.45;
+}
+
+.support-message-content {
+  display: grid;
+  gap: 8px;
+}
+
+.support-message-content ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 20px;
+}
+
+.support-message-content li {
+  padding-left: 2px;
+}
+
+.support-message-content strong {
+  font-weight: 800;
 }
 
 .support-typing {

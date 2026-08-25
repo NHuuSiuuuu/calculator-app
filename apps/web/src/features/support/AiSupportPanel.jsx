@@ -17,6 +17,60 @@ function formatDocumentTime(value) {
   return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
+function renderInlineMarkdown(text, keyPrefix) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${keyPrefix}-strong-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function MessageContent({ content }) {
+  const blocks = [];
+  let bulletItems = [];
+
+  function flushBullets() {
+    if (bulletItems.length === 0) return;
+    const listIndex = blocks.length;
+    blocks.push(
+      <ul key={`list-${listIndex}`}>
+        {bulletItems.map((item, itemIndex) => (
+          <li key={`list-${listIndex}-item-${itemIndex}`}>
+            {renderInlineMarkdown(item, `list-${listIndex}-item-${itemIndex}`)}
+          </li>
+        ))}
+      </ul>,
+    );
+    bulletItems = [];
+  }
+
+  String(content ?? "").split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushBullets();
+      return;
+    }
+
+    const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+    if (bulletMatch) {
+      bulletItems.push(bulletMatch[1]);
+      return;
+    }
+
+    flushBullets();
+    const paragraphIndex = blocks.length;
+    blocks.push(
+      <p key={`paragraph-${paragraphIndex}`}>
+        {renderInlineMarkdown(trimmed, `paragraph-${paragraphIndex}`)}
+      </p>,
+    );
+  });
+  flushBullets();
+
+  return <div className="support-message-content">{blocks}</div>;
+}
+
 export function AiSupportPanel({ session, supportApi }) {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -249,7 +303,7 @@ export function AiSupportPanel({ session, supportApi }) {
                   <span />
                   <span />
                 </div>
-              ) : <p>{message.content}</p>}
+              ) : <MessageContent content={message.content} />}
             </article>
           ))}
         </div>

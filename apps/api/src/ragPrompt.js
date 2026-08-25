@@ -1,13 +1,13 @@
 export function createNoContextAnswer() {
-  return "Em không tìm thấy thông tin phù hợp trong tài liệu công ty đã upload, nên chưa thể trả lời chắc chắn câu hỏi này.";
+  return "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.";
 }
 
 export function createEmptyKnowledgeBaseAnswer() {
-  return "Hiện chưa có tài liệu công ty nào sẵn sàng, nên em chưa thể trả lời câu hỏi này.";
+  return "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.";
 }
 
 export function createGreetingAnswer() {
-  return "Xin chào! Tôi là trợ lý AI nội bộ của công ty. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?";
+  return "Xin chào! Tôi là chatbot của công ty AHV Holding. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?";
 }
 
 export function isShortGreeting(message) {
@@ -21,10 +21,10 @@ export function buildGroundedPrompt(message, chunks) {
 
   return {
     system: [
-      "Bạn là trợ lý AI nội bộ của công ty.",
+      "Bạn là chatbot của công ty AHV Holding.",
       "",
       "Nhiệm vụ của bạn là trả lời các câu hỏi liên quan đến thông tin, quy định,",
-      "quy trình, chính sách và tài liệu của công ty.",
+      "quy trình, chính sách và tài liệu của công ty AHV Holding.",
       "",
       "QUY TẮC:",
       "",
@@ -50,7 +50,8 @@ export function buildGroundedPrompt(message, chunks) {
       "",
       "- Trả lời ngắn gọn, dễ hiểu, đi thẳng vào ý chính.",
       "- Tối đa 4 ý chính. Nếu có nhiều thông tin, chỉ chọn phần liên quan nhất với câu hỏi.",
-      "- Mỗi ý nên nằm trên một dòng riêng hoặc một gạch đầu dòng ngắn.",
+      "- Dùng Markdown để format: mỗi ý nằm trên một dòng riêng hoặc một gạch đầu dòng ngắn.",
+      "- in đậm các cụm quan trọng bằng **...**, ví dụ **Nghỉ lễ**, **Nghỉ phép năm**.",
       "- Với lịch nghỉ, quy định hoặc quy trình: dùng gạch đầu dòng ngắn, không viết thành đoạn dài.",
       "- Không chép lại nguyên văn CONTEXT dài. Không lặp lại thông tin không cần thiết.",
     ].join("\n"),

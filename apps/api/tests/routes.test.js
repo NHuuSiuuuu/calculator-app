@@ -161,7 +161,7 @@ test("handleChatRequest answers short greetings as the company AI assistant with
     },
   });
 
-  assert.equal(result.answer, "Xin chào! Tôi là trợ lý AI nội bộ của công ty. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?");
+  assert.equal(result.answer, "Xin chào! Tôi là chatbot của công ty AHV Holding. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[0].role, "user");
   assert.equal(messages[1].role, "assistant");
@@ -229,7 +229,7 @@ test("handleChatRequest returns the no-context answer when retrieval is empty", 
     },
   });
 
-  assert.equal(result.answer, "Em không tìm thấy thông tin phù hợp trong tài liệu công ty đã upload, nên chưa thể trả lời chắc chắn câu hỏi này.");
+  assert.equal(result.answer, "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[1].role, "assistant");
 });
@@ -263,7 +263,7 @@ test("handleChatRequest distinguishes an empty knowledge base from irrelevant re
     },
   });
 
-  assert.match(result.answer, /chưa có tài liệu công ty/i);
+  assert.equal(result.answer, "Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có.");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[1].role, "assistant");
 });

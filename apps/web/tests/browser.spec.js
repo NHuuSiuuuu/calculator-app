@@ -352,6 +352,55 @@ test("signed-in users can chat with AI Support without visible sources", async (
   expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
 });
 
+test("AI Support renders assistant markdown with bold text and separate bullet lines", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/chat")) {
+        return {
+          ok: true,
+          json: async () => ({
+            conversationId: "conv-1",
+            answer: "**Lịch nghỉ công ty:**\n- Tết Dương lịch: 01 ngày.\n- Quốc khánh: 02 ngày.",
+            sources: [],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByLabel("Câu hỏi").fill("Thông tin ngày nghỉ công ty");
+  await page.getByRole("button", { name: "Gửi" }).click();
+
+  await expect(page.locator(".support-message strong", { hasText: "Lịch nghỉ công ty:" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Tết Dương lịch: 01 ngày." })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Quốc khánh: 02 ngày." })).toBeVisible();
+});
+
 test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
