@@ -21,16 +21,36 @@ test("AI Support uses a ChatGPT-style chat shell", () => {
   const component = readFileSync(new URL("../src/features/support/AiSupportPanel.jsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/App.css", import.meta.url), "utf8");
 
-  assert.match(component, /className="support-chat-shell"/);
+  assert.match(component, /support-chat-shell/);
   assert.match(component, /className="support-chat-panel"/);
   assert.match(component, /className="support-sidebar-section support-sidebar-section--documents"/);
   assert.match(component, /Khi bạn sẵn sàng là chúng ta có thể bắt đầu/);
   assert.match(css, /\.support-chat-shell\s*{/);
-  assert.match(css, /\.support-chat-shell\s*{[\s\S]*?background:\s*#000000/);
-  assert.match(css, /\.support-sidebar\s*{[\s\S]*?background:\s*#050505/);
+  assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-bg:\s*#000000/);
+  assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-sidebar-bg:\s*#050505/);
+  assert.match(css, /\.support-sidebar\s*{[\s\S]*?background:\s*var\(--support-sidebar-bg\)/);
   assert.match(css, /\.support-compose\s*{[\s\S]*?border-radius:\s*999px/);
-  assert.match(css, /\.support-compose\s*{[\s\S]*?background:\s*#202123/);
+  assert.match(css, /\.support-compose\s*{[\s\S]*?background:\s*var\(--support-compose-bg\)/);
   assert.match(css, /\.support-compose\s*{[\s\S]*?position:\s*sticky/);
+});
+
+test("AI Support exposes theme controls and disables message input history", () => {
+  const component = readFileSync(new URL("../src/features/support/AiSupportPanel.jsx", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../src/App.css", import.meta.url), "utf8");
+
+  assert.match(component, /useState\("dark"\)/);
+  assert.match(component, /setTheme\(\(current\) => \(current === "dark" \? "light" : "dark"\)\)/);
+  assert.match(component, /className=\{`support-chat-shell is-\$\{theme\}`\}/);
+  assert.match(component, />AHV</);
+  assert.match(component, /aria-label="Toggle support theme"/);
+  assert.match(component, /autoComplete="off"/);
+  assert.match(component, /name="support-chat-message"/);
+  assert.match(component, /spellCheck="false"/);
+  assert.match(css, /\.support-chat-shell\.is-light\s*{/);
+  assert.match(css, /\.support-chat-shell\s*{[\s\S]*?--support-scrollbar-thumb:/);
+  assert.match(css, /\.support-sidebar::-webkit-scrollbar-thumb\s*{/);
+  assert.match(css, /\.support-conversation \+ \.support-conversation\s*{/);
+  assert.match(css, /\.support-chat-stage\s*{/);
 });
 
 test("Supabase migration upgrades existing todos to user-owned RLS", () => {

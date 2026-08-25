@@ -82,6 +82,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [theme, setTheme] = useState("dark");
   const conversationRequestGuard = useRef(null);
   if (!conversationRequestGuard.current) {
     conversationRequestGuard.current = createLatestRequestGuard();
@@ -218,15 +219,25 @@ export function AiSupportPanel({ session, supportApi }) {
   }
 
   return (
-    <div className="support-chat-shell">
+    <div className={`support-chat-shell is-${theme}`}>
       <aside className="support-sidebar" aria-label="Conversations">
         <div className="support-sidebar-section">
           <div className="support-sidebar-header">
             <div>
-              <p className="eyebrow">Company knowledge</p>
+              <p className="eyebrow">AHV</p>
               <h1>AI Support</h1>
             </div>
-            <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
+            <div className="support-sidebar-actions">
+              <button
+                className="support-theme-toggle"
+                type="button"
+                aria-label="Toggle support theme"
+                onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+              >
+                {theme === "dark" ? "Light" : "Dark"}
+              </button>
+              <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
+            </div>
           </div>
         </div>
 
@@ -275,51 +286,57 @@ export function AiSupportPanel({ session, supportApi }) {
         </section> : null}
       </aside>
 
-      <section className="support-chat-panel" aria-label="Support chat">
-        <header className="support-chat-header">
-          <div>
-            <h2>Hỏi theo tài liệu công ty</h2>
-            <p>{selectedConversationId ? "Conversation context loaded" : "New conversation"}</p>
-          </div>
-        </header>
-
-        <div className="support-notices">
-          {error ? <p className="support-message-status is-error" role="alert">{error}</p> : null}
-          {statusMessage ? <p className="support-message-status" aria-live="polite">{statusMessage}</p> : null}
-        </div>
-
-        <div className="support-messages" aria-live="polite">
-          {messages.length === 0 ? (
-            <div className="support-empty-state">
-              <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
+      <main className="support-chat-stage">
+        <section className="support-chat-panel" aria-label="Support chat">
+          <header className="support-chat-header">
+            <div>
+              <h2>Hỏi theo tài liệu công ty</h2>
+              <p>{selectedConversationId ? "Conversation context loaded" : "New conversation"}</p>
             </div>
-          ) : null}
-          {messages.map((message) => (
-            <article key={message.id} className={`support-message${message.role === "user" ? " is-user" : ""}`}>
-              {message.isLoading ? (
-                <div className="support-typing" aria-label="AI đang trả lời">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              ) : <MessageContent content={message.content} />}
-            </article>
-          ))}
-        </div>
+          </header>
 
-        <form className="support-compose" onSubmit={submitMessage}>
-          <label className="sr-only" htmlFor="support-message">Câu hỏi</label>
-          <input
-            id="support-message"
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Ask about documents"
-            maxLength={4000}
-            disabled={isSending}
-          />
-          <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
-        </form>
-      </section>
+          <div className="support-notices">
+            {error ? <p className="support-message-status is-error" role="alert">{error}</p> : null}
+            {statusMessage ? <p className="support-message-status" aria-live="polite">{statusMessage}</p> : null}
+          </div>
+
+          <div className="support-messages" aria-live="polite">
+            {messages.length === 0 ? (
+              <div className="support-empty-state">
+                <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
+              </div>
+            ) : null}
+            {messages.map((message) => (
+              <article key={message.id} className={`support-message${message.role === "user" ? " is-user" : ""}`}>
+                {message.isLoading ? (
+                  <div className="support-typing" aria-label="AI đang trả lời">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ) : <MessageContent content={message.content} />}
+              </article>
+            ))}
+          </div>
+
+          <form className="support-compose" onSubmit={submitMessage} autoComplete="off">
+            <label className="sr-only" htmlFor="support-message">Câu hỏi</label>
+            <input
+              id="support-message"
+              name="support-chat-message"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask about documents"
+              maxLength={4000}
+              disabled={isSending}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
+            />
+            <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
+          </form>
+        </section>
+      </main>
     </div>
   );
 }
