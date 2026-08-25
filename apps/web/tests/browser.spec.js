@@ -269,6 +269,51 @@ test("AI Support keeps the selected theme after reload", async ({ page }) => {
   await expect(page.locator(".support-chat-shell")).toHaveClass(/is-light/);
 });
 
+test("support conversation title scrolls on hover without stretching the sidebar", async ({ page }) => {
+  const longTitle = "Quy định nghỉ phép năm và quy trình duyệt đơn nghỉ của công ty AHV Holding";
+  await page.addInitScript((title) => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [{ id: "conv-long", title }] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  }, longTitle);
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  const sidebar = page.locator(".support-sidebar");
+  const conversation = page.getByRole("button", { name: longTitle });
+  const sidebarWidthBefore = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
+
+  await conversation.hover();
+  await conversation.focus();
+
+  await expect(page.locator(".support-conversation-title-track")).toHaveCSS("animation-name", "support-conversation-title-scroll");
+  await expect(conversation).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const sidebarWidthAfter = await sidebar.evaluate((element) => element.getBoundingClientRect().width);
+  expect(sidebarWidthAfter).toBe(sidebarWidthBefore);
+});
+
 test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {

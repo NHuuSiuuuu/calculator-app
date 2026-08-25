@@ -563,7 +563,7 @@ input {
   --support-scrollbar-thumb: #3f3f46;
   --support-scrollbar-track: #050505;
   display: grid;
-  grid-template-columns: minmax(220px, 248px) minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: calc(100vh - 61px);
   background: var(--support-bg);
   color: var(--support-text);
@@ -822,26 +822,34 @@ input {
 }
 
 .support-conversation-title {
-  display: flex;
-  width: max-content;
-  max-width: 100%;
+  display: block;
+  width: 100%;
   overflow: hidden;
 }
 
+.support-conversation-title-track {
+  display: inline-flex;
+  max-width: 100%;
+}
+
 .support-conversation-title-text {
-  display: block;
-  min-width: 100%;
+  display: inline-block;
+  flex: 0 0 auto;
+  max-width: 100%;
   overflow: hidden;
   padding-right: 24px;
   text-overflow: ellipsis;
 }
 
-.support-conversation:hover .support-conversation-title {
+.support-conversation:hover .support-conversation-title-track,
+.support-conversation:focus .support-conversation-title-track {
   max-width: none;
   animation: support-conversation-title-scroll 8s linear infinite;
 }
 
-.support-conversation:hover .support-conversation-title-text {
+.support-conversation:hover .support-conversation-title-text,
+.support-conversation:focus .support-conversation-title-text {
+  max-width: none;
   overflow: visible;
   text-overflow: clip;
 }
@@ -859,11 +867,11 @@ input {
 }
 
 .support-conversation-row.is-selected .support-conversation {
-  background: var(--support-action-bg);
+  background: transparent;
 }
 
 .support-conversation:hover {
-  background: var(--support-conversation-hover);
+  background: transparent;
 }
 
 .support-conversation-delete {

@@ -299,8 +299,10 @@ export function AiSupportPanel({ session, supportApi }) {
                     disabled={deletingConversationId === conversation.id}
                   >
                     <span className="support-conversation-title" aria-hidden="true">
-                      <span className="support-conversation-title-text">{title}</span>
-                      <span className="support-conversation-title-text" aria-hidden="true">{title}</span>
+                      <span className="support-conversation-title-track">
+                        <span className="support-conversation-title-text">{title}</span>
+                        <span className="support-conversation-title-text" aria-hidden="true">{title}</span>
+                      </span>
                     </span>
                   </button>
                   <button
