@@ -17,6 +17,9 @@ test("buildGroundedPrompt includes only retrieved company chunks", () => {
   assert.match(prompt.system, /Không tự bịa thông tin hoặc sử dụng kiến thức bên ngoài/);
   assert.match(prompt.system, /Tôi chưa tìm thấy thông tin về vấn đề này trong tài liệu hiện có/);
   assert.match(prompt.system, /Trả lời bằng tiếng Việt/);
+  assert.match(prompt.system, /ngắn gọn, dễ hiểu/);
+  assert.match(prompt.system, /Tối đa 4 ý chính/);
+  assert.match(prompt.system, /Không chép lại nguyên văn CONTEXT dài/);
   assert.match(prompt.system, /Không nói rằng bạn đã được "huấn luyện" với tài liệu/);
   assert.match(prompt.user, /CONTEXT:/);
   assert.match(prompt.user, /CÂU HỎI CỦA NGƯỜI DÙNG:/);
