@@ -250,14 +250,6 @@ export function AiSupportPanel({ session, supportApi }) {
                   <span />
                 </div>
               ) : <p>{message.content}</p>}
-              {message.sources?.length ? (
-                <div className="support-sources">
-                  <strong>Nguồn:</strong>
-                  {message.sources.map((source) => (
-                    <span key={source.chunkId} className="support-source-chip">{source.filename}</span>
-                  ))}
-                </div>
-              ) : null}
             </article>
           ))}
         </div>

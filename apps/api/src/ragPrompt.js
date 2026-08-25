@@ -6,6 +6,14 @@ export function createEmptyKnowledgeBaseAnswer() {
   return "Hiện chưa có tài liệu công ty nào sẵn sàng, nên em chưa thể trả lời câu hỏi này.";
 }
 
+export function createGreetingAnswer() {
+  return "Xin chào! Tôi là trợ lý AI nội bộ của công ty. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?";
+}
+
+export function isShortGreeting(message) {
+  return /^(hi|hello|hey|chào|xin chào|chao|alo|a lô)$/i.test(message.trim());
+}
+
 export function buildGroundedPrompt(message, chunks) {
   const context = chunks.map((chunk, index) => (
     `Nguồn ${index + 1}: ${chunk.filename}\n${chunk.content}`

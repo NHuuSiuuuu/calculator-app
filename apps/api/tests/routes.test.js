@@ -131,6 +131,43 @@ test("handleChatRequest retrieves the top K chunks without a high similarity thr
   assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "faq.md", similarity: 0.52 }]);
 });
 
+test("handleChatRequest answers short greetings as the company AI assistant without retrieval", async () => {
+  const messages = [];
+  const result = await handleChatRequest({
+    user: { id: "user-1" },
+    body: { message: "hi" },
+    repository: {
+      async createConversation(_userId, title) {
+        assert.equal(title, "hi");
+        return { id: "conv-1" };
+      },
+      async insertMessage(message) {
+        messages.push(message);
+      },
+      async hasReadyDocuments() {
+        throw new Error("should not check documents for a greeting");
+      },
+      async matchChunks() {
+        throw new Error("should not retrieve chunks for a greeting");
+      },
+    },
+    openAiClient: {
+      async createEmbedding() {
+        throw new Error("should not embed a greeting");
+      },
+      async createChatAnswer() {
+        throw new Error("should not call chat model for a greeting");
+      },
+    },
+  });
+
+  assert.equal(result.answer, "Xin chào! Tôi là trợ lý AI nội bộ của công ty. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?");
+  assert.deepEqual(result.sources, []);
+  assert.equal(messages[0].role, "user");
+  assert.equal(messages[1].role, "assistant");
+  assert.equal(messages[1].content, result.answer);
+});
+
 test("handleChatRequest rejects an existing conversation not owned by the user", async () => {
   const messages = [];
 

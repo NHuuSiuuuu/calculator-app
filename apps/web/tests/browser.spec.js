@@ -295,7 +295,7 @@ test("demo AI Support keeps document upload visible when the API is failing", as
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
 });
 
-test("signed-in users can chat with AI Support and see sources", async ({ page }) => {
+test("signed-in users can chat with AI Support without visible sources", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "support-token",
@@ -345,7 +345,8 @@ test("signed-in users can chat with AI Support and see sources", async ({ page }
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Chính sách hoàn tiền là 7 ngày.")).toBeVisible();
-  await expect(page.getByText("policy.md")).toBeVisible();
+  await expect(page.getByText("Nguồn:")).toHaveCount(0);
+  await expect(page.getByText("policy.md")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
   expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
