@@ -8,6 +8,8 @@ const vercelApiUrl = new URL("../../../api/[...path].js", import.meta.url);
 const webRootVercelApiUrl = new URL("../../web/api/[...path].js", import.meta.url);
 const uploadApiUrl = new URL("../../../api/documents/upload.js", import.meta.url);
 const webRootUploadApiUrl = new URL("../../web/api/documents/upload.js", import.meta.url);
+const conversationApiUrl = new URL("../../../api/conversations/[id].js", import.meta.url);
+const webRootConversationApiUrl = new URL("../../web/api/conversations/[id].js", import.meta.url);
 const messagesApiUrl = new URL("../../../api/conversations/[id]/messages.js", import.meta.url);
 const webRootMessagesApiUrl = new URL("../../web/api/conversations/[id]/messages.js", import.meta.url);
 
@@ -42,12 +44,22 @@ test("web-root Vercel catch-all API function is available for apps/web root depl
   assert.match(source, /createVercelHandler/);
 });
 
-test("nested Vercel API functions are available for upload and conversation messages", async () => {
-  for (const routeUrl of [uploadApiUrl, webRootUploadApiUrl, messagesApiUrl, webRootMessagesApiUrl]) {
+test("nested Vercel API functions are available for upload and conversations", async () => {
+  for (const routeUrl of [
+    uploadApiUrl,
+    webRootUploadApiUrl,
+    conversationApiUrl,
+    webRootConversationApiUrl,
+    messagesApiUrl,
+    webRootMessagesApiUrl,
+  ]) {
     await access(routeUrl);
     const source = await readFile(routeUrl, "utf8");
     assert.match(source, /createProductionApiServer/);
     assert.match(source, /createVercelHandler/);
+
+    const routeModule = await import(routeUrl);
+    assert.equal(typeof routeModule.default, "function");
   }
 });
 

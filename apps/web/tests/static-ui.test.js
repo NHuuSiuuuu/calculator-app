@@ -38,7 +38,10 @@ test("AI Support exposes theme controls and disables message input history", () 
   const component = readFileSync(new URL("../src/features/support/AiSupportPanel.jsx", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/App.css", import.meta.url), "utf8");
 
-  assert.match(component, /useState\("dark"\)/);
+  assert.match(component, /SUPPORT_THEME_STORAGE_KEY = "support-theme"/);
+  assert.match(component, /window\.localStorage\.getItem\(SUPPORT_THEME_STORAGE_KEY\)/);
+  assert.match(component, /window\.localStorage\.setItem\(SUPPORT_THEME_STORAGE_KEY, theme\)/);
+  assert.match(component, /useState\(readStoredSupportTheme\)/);
   assert.match(component, /setTheme\(\(current\) => \(current === "dark" \? "light" : "dark"\)\)/);
   assert.match(component, /className=\{`support-chat-shell is-\$\{theme\}`\}/);
   assert.match(component, />AHV</);

@@ -226,6 +226,48 @@ test("support can delete the selected conversation", async ({ page }) => {
   await expect(page.getByText("New conversation", { exact: true })).toBeVisible();
 });
 
+test("AI Support keeps the selected theme after reload", async ({ page }) => {
+  await page.addInitScript(() => {
+    const session = {
+      access_token: "user-access-token",
+      user: { id: "user-1", email: "a@example.com" },
+    };
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/me")) {
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
+      }
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-dark/);
+
+  await page.getByRole("button", { name: "Toggle support theme" }).click();
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-light/);
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("support-theme"))).toBe("light");
+
+  await page.reload();
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.locator(".support-chat-shell")).toHaveClass(/is-light/);
+});
+
 test("support shows an assistant loading bubble while waiting for an answer", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {

@@ -7,6 +7,13 @@ function responseItems(payload, key) {
   return Array.isArray(payload?.[key]) ? payload[key] : [];
 }
 
+const SUPPORT_THEME_STORAGE_KEY = "support-theme";
+
+function readStoredSupportTheme() {
+  const storedTheme = window.localStorage.getItem(SUPPORT_THEME_STORAGE_KEY);
+  return storedTheme === "light" ? "light" : "dark";
+}
+
 function messageId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -83,7 +90,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [deletingConversationId, setDeletingConversationId] = useState(null);
   const [error, setError] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [theme, setTheme] = useState("dark");
+  const [theme, setTheme] = useState(readStoredSupportTheme);
   const conversationRequestGuard = useRef(null);
   if (!conversationRequestGuard.current) {
     conversationRequestGuard.current = createLatestRequestGuard();
@@ -91,6 +98,10 @@ export function AiSupportPanel({ session, supportApi }) {
   const api = useMemo(() => supportApi ?? createSupportApi({
     getAccessToken: () => session?.accessToken ?? "",
   }), [session, supportApi]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SUPPORT_THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   useEffect(() => {
     let isCurrent = true;
