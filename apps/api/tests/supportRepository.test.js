@@ -142,6 +142,39 @@ test("repository reports Supabase permission errors as service role setup errors
   );
 });
 
+test("repository reports embedding dimension mismatch as a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_document_chunks");
+      return {
+        insert() {
+          return {
+            select() {
+              return Promise.resolve({
+                data: null,
+                error: { message: "expected 1536 dimensions, not 3072" },
+              });
+            },
+          };
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.insertChunks("doc-1", [{
+      content: "Refund policy",
+      tokenEstimate: 2,
+      embedding: Array.from({ length: 3072 }, () => 0.01),
+    }]),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Embedding dimension mismatch. Gemini must return 1536-dimensional embeddings for the current Supabase schema."
+    ),
+  );
+});
+
 test("repository gets a conversation scoped by its owner", async () => {
   const calls = [];
   const repository = createSupportRepository({

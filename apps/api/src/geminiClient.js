@@ -58,6 +58,11 @@ export function createGeminiClient(config, fetchImpl = globalThis.fetch) {
           outputDimensionality: config.embeddingDimensions,
         },
       });
+      if (!Array.isArray(payload.embedding?.values)) {
+        const error = new Error("Gemini embedding response did not include embedding.values");
+        error.statusCode = 502;
+        throw error;
+      }
       return payload.embedding.values;
     },
 

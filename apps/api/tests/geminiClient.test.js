@@ -99,3 +99,23 @@ test("createGeminiClient exposes Gemini API failures as gateway errors", async (
     (error) => error.statusCode === 502 && error.message === "Rate limit exceeded",
   );
 });
+
+test("createGeminiClient reports missing embedding values as a gateway error", async () => {
+  const client = createGeminiClient({
+    geminiApiKey: "gemini-test",
+    embeddingModel: "gemini-embedding-001",
+    embeddingDimensions: 1536,
+    chatModel: "gemini-2.5-flash-lite",
+  }, async () => ({
+    ok: true,
+    async json() {
+      return { embeddings: [{ values: [0.1, 0.2, 0.3] }] };
+    },
+  }));
+
+  await assert.rejects(
+    () => client.createEmbedding("Company policy"),
+    (error) => error.statusCode === 502
+      && error.message === "Gemini embedding response did not include embedding.values",
+  );
+});

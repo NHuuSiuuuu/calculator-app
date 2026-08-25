@@ -15,6 +15,9 @@ function raiseIfError(error) {
     if (/permission denied|row-level security|invalid api key|invalid jwt|jwt/i.test(message)) {
       throw createSetupError("Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel.");
     }
+    if (/expected \d+ dimensions, not \d+/i.test(message)) {
+      throw createSetupError("Embedding dimension mismatch. Gemini must return 1536-dimensional embeddings for the current Supabase schema.");
+    }
     throw new Error(message);
   }
 }
