@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("calculator computes with pointer input", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
   for (const key of ["1", "2", "+", "3", "="]) {
     await page.locator(`[data-key="${key}"]`).click();
@@ -27,15 +28,11 @@ test("calculator supports keyboard input and division by zero errors", async ({ 
 
 test("calculator deletes one history entry at a time", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
-  await page.keyboard.press("1");
-  await page.keyboard.press("+");
-  await page.keyboard.press("2");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("4");
-  await page.keyboard.press("*");
-  await page.keyboard.press("5");
-  await page.keyboard.press("Enter");
+  for (const key of ["1", "+", "2", "=", "4", "*", "5", "="]) {
+    await page.locator(`[data-key="${key}"]`).click();
+  }
 
   await expect(page.locator("#history")).toContainText("1 + 2 = 3");
   await expect(page.locator("#history")).toContainText("4 * 5 = 20");
@@ -48,12 +45,37 @@ test("calculator deletes one history entry at a time", async ({ page }) => {
 
 test("calculator layout is visible without horizontal overflow", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
   await expect(page.locator(".calculator")).toBeVisible();
   await expect(page.locator("[data-key='=']")).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(hasHorizontalOverflow).toBe(false);
+});
+
+test("AI Support is the default app tab on first load", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("tab")).toHaveText(["AI Support", "Calculator", "Todo List"]);
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Đăng nhập để hỏi AI Support.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng ký tài khoản" })).toBeVisible();
+  await expect(page.locator("#panel-support")).toBeVisible();
 });
 
 test("signed-out users see auth form instead of todos", async ({ page }) => {
@@ -81,6 +103,85 @@ test("signed-out users see auth form instead of todos", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Đăng ký" })).not.toBeVisible();
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
+});
+
+test("signed-out users do not trigger AI Support API calls before asking", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.supportRequests = [];
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      window.supportRequests.push({ url: String(url), method: options.method ?? "GET" });
+      return { ok: false, status: 401, json: async () => ({ error: "Missing bearer token" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.getByText("Đăng nhập để hỏi AI Support.")).toBeVisible();
+  await expect(page.getByLabel("Câu hỏi")).toBeDisabled();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportRequests)).toEqual([]);
+});
+
+test("signed-out support users can open the sign-in form", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog", { name: "Đăng nhập" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("tab", { name: "Đăng nhập" })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+});
+
+test("signed-out support users can open the sign-up form", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Đăng ký tài khoản" }).click();
+
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog", { name: "Đăng ký tài khoản" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("tab", { name: "Đăng ký" })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("button", { name: "Đăng ký" })).toBeVisible();
 });
 
 test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {
@@ -493,12 +594,18 @@ test("support shows an assistant loading bubble while waiting for an answer", as
   await expect(page.getByText("Delayed answer", { exact: true })).toBeVisible();
 });
 
-test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
+test("signed-in support users can manage their own documents and ask questions", async ({ page }) => {
   await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+    window.supportRequests = [];
+
     window.APP_SUPABASE_CLIENT = {
       auth: {
         async getSession() {
-          return { data: { session: null }, error: null };
+          return { data: { session }, error: null };
         },
         onAuthStateChange() {
           return { data: { subscription: { unsubscribe() {} } } };
@@ -506,9 +613,10 @@ test("signed-out users can use demo AI Support and see document upload", async (
       },
     };
 
-    window.fetch = async (url) => {
+    window.fetch = async (url, options = {}) => {
+      window.supportRequests.push({ url: String(url), method: options.method ?? "GET" });
       if (String(url).endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: null, role: "admin" } }) };
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
       }
       if (String(url).endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
@@ -532,16 +640,22 @@ test("signed-out users can use demo AI Support and see document upload", async (
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Demo answer")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  expect(await page.evaluate(() => window.supportRequests.some((request) => request.url.endsWith("/api/documents")))).toBe(true);
 });
 
-test("demo AI Support keeps document upload visible when the API is failing", async ({ page }) => {
+test("signed-in support users can see document controls without role loading", async ({ page }) => {
   await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
     window.APP_SUPABASE_CLIENT = {
       auth: {
         async getSession() {
-          return { data: { session: null }, error: null };
+          return { data: { session }, error: null };
         },
         onAuthStateChange() {
           return { data: { subscription: { unsubscribe() {} } } };
@@ -549,19 +663,23 @@ test("demo AI Support keeps document upload visible when the API is failing", as
       },
     };
 
-    window.fetch = async () => ({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "Request failed with 500" }),
-    });
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
+    };
   });
 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  await expect(page.getByRole("alert")).toContainText("Request failed with 500");
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 test("signed-in users can chat with AI Support without visible sources", async ({ page }) => {
@@ -592,7 +710,7 @@ test("signed-in users can chat with AI Support without visible sources", async (
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
       if (String(url).endsWith("/api/documents")) {
-        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+        return { ok: true, json: async () => ({ documents: [] }) };
       }
       if (String(url).endsWith("/api/chat")) {
         return {
@@ -617,8 +735,8 @@ test("signed-in users can chat with AI Support without visible sources", async (
   await expect(page.getByText("Nguồn:")).toHaveCount(0);
   await expect(page.getByText("policy.md")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
-  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
+  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBeGreaterThan(0);
 });
 
 test("AI Support renders assistant markdown with bold text and separate bullet lines", async ({ page }) => {
@@ -670,7 +788,7 @@ test("AI Support renders assistant markdown with bold text and separate bullet l
   await expect(page.getByRole("listitem").filter({ hasText: "Quốc khánh: 02 ngày." })).toBeVisible();
 });
 
-test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
+test("support document panel displays the signed-in user's ingestion metadata", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "admin-token",
@@ -689,9 +807,6 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
     };
 
     window.fetch = async (url) => {
-      if (String(url).endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
-      }
       if (String(url).endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
@@ -717,7 +832,7 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  const documents = page.getByRole("region", { name: "Company documents" });
+  const documents = page.getByRole("region", { name: "My documents" });
   await expect(documents.getByText("broken.md")).toBeVisible();
   await expect(documents.getByText("failed", { exact: true })).toBeVisible();
   await expect(documents.getByText("0 chunks", { exact: true })).toBeVisible();
@@ -725,7 +840,7 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
   await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
 });
 
-test("admin support dashboard can delete an old company document", async ({ page }) => {
+test("signed-in support users can delete their own old company document", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "admin-token",
@@ -755,9 +870,6 @@ test("admin support dashboard can delete an old company document", async ({ page
     window.fetch = async (url, options = {}) => {
       const path = String(url);
       window.supportDocumentRequests.push({ url: path, method: options.method ?? "GET" });
-      if (path.endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
-      }
       if (path.endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
@@ -776,7 +888,7 @@ test("admin support dashboard can delete an old company document", async ({ page
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  const documents = page.getByRole("region", { name: "Company documents" });
+  const documents = page.getByRole("region", { name: "My documents" });
   await expect(documents.getByText("old-policy.md")).toBeVisible();
   await documents.getByRole("button", { name: "Xóa tài liệu old-policy.md" }).click();
 
@@ -825,6 +937,9 @@ test("support discards a stale conversation response after the account changes",
           }),
         };
       }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
       if (String(url).includes("/api/conversations/conv-user-1/messages")) {
         return new Promise((resolve) => {
           window.resolveOldConversation = () => resolve({
@@ -835,7 +950,7 @@ test("support discards a stale conversation response after the account changes",
           });
         });
       }
-      return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
     };
   });
 

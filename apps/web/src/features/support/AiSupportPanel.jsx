@@ -79,12 +79,11 @@ function MessageContent({ content }) {
   return <div className="support-message-content">{blocks}</div>;
 }
 
-export function AiSupportPanel({ session, supportApi }) {
+export function AiSupportPanel({ session, supportApi, onAuthRequested }) {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [documents, setDocuments] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(true);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -95,6 +94,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [theme, setTheme] = useState(readStoredSupportTheme);
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false);
   const messagesRef = useRef(null);
+  const hasSession = Boolean(session?.accessToken);
   const conversationRequestGuard = useRef(null);
   if (!conversationRequestGuard.current) {
     conversationRequestGuard.current = createLatestRequestGuard();
@@ -136,6 +136,17 @@ export function AiSupportPanel({ session, supportApi }) {
   useEffect(() => {
     let isCurrent = true;
     async function loadSupportData() {
+      if (!hasSession) {
+        conversationRequestGuard.current.begin();
+        setConversations([]);
+        setMessages([]);
+        setDocuments([]);
+        setSelectedConversationId(null);
+        setError("");
+        setStatusMessage("");
+        return;
+      }
+
       try {
         const conversationsPayload = await api.listConversations();
         if (isCurrent) setConversations(responseItems(conversationsPayload, "conversations"));
@@ -144,14 +155,8 @@ export function AiSupportPanel({ session, supportApi }) {
       }
 
       try {
-        const currentUserPayload = await api.getCurrentUser();
-        if (!isCurrent) return;
-        const nextIsAdmin = currentUserPayload?.user?.role !== "user";
-        setIsAdmin(nextIsAdmin);
-        if (nextIsAdmin) {
-          const documentsPayload = await api.listDocuments();
-          if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
-        }
+        const documentsPayload = await api.listDocuments();
+        if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
       } catch (nextError) {
         if (isCurrent) setError(nextError.message);
       }
@@ -161,7 +166,7 @@ export function AiSupportPanel({ session, supportApi }) {
     return () => {
       isCurrent = false;
     };
-  }, [api]);
+  }, [api, hasSession]);
 
   async function selectConversation(conversationId) {
     const request = conversationRequestGuard.current.begin();
@@ -216,7 +221,7 @@ export function AiSupportPanel({ session, supportApi }) {
   async function submitMessage(event) {
     event.preventDefault();
     const message = input.trim();
-    if (!message || isSending) return;
+    if (!hasSession || !message || isSending) return;
 
     setError("");
     setStatusMessage("Sending message...");
@@ -309,7 +314,7 @@ export function AiSupportPanel({ session, supportApi }) {
         <div className="support-sidebar-section">
           <div className="support-sidebar-header">
             <div>
-              <p className="eyebrow">AHV</p>
+              <p className="eyebrow">Docs</p>
               <h1>AI Support</h1>
             </div>
             <div className="support-sidebar-actions">
@@ -321,7 +326,7 @@ export function AiSupportPanel({ session, supportApi }) {
               >
                 {theme === "dark" ? "Light" : "Dark"}
               </button>
-              <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
+              <span className="status-pill">{hasSession ? (isSending ? "Working" : "Ready") : "Sign in"}</span>
             </div>
           </div>
         </div>
@@ -369,9 +374,9 @@ export function AiSupportPanel({ session, supportApi }) {
           </div>
         </div>
 
-        {isAdmin ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="Company documents">
+        {hasSession ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="My documents">
           <div className="support-admin__header">
-            <h2>Tài liệu công ty</h2>
+            <h2>Tài liệu của tôi</h2>
             <label className="support-upload">
               <span>Upload .txt hoặc .md</span>
               <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={uploadDocument} disabled={isUploading} />
@@ -409,7 +414,7 @@ export function AiSupportPanel({ session, supportApi }) {
         <section className="support-chat-panel" aria-label="Support chat">
           <header className="support-chat-header">
             <div>
-              <h2>Hỏi theo tài liệu công ty</h2>
+              <h2>Hỏi theo tài liệu của bạn</h2>
               <p>{selectedConversationId ? "Conversation context loaded" : "New conversation"}</p>
             </div>
           </header>
@@ -427,7 +432,17 @@ export function AiSupportPanel({ session, supportApi }) {
           >
             {messages.length === 0 ? (
               <div className="support-empty-state">
-                <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
+                <h1>{hasSession ? "Khi bạn sẵn sàng là chúng ta có thể bắt đầu." : "Đăng nhập để hỏi AI Support."}</h1>
+                {!hasSession ? (
+                  <div className="support-auth-actions" aria-label="AI Support account actions">
+                    <button type="button" onClick={() => onAuthRequested?.("signin")}>
+                      Đăng nhập
+                    </button>
+                    <button type="button" onClick={() => onAuthRequested?.("signup")}>
+                      Đăng ký tài khoản
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {messages.map((message) => (
@@ -461,14 +476,14 @@ export function AiSupportPanel({ session, supportApi }) {
               name="support-chat-message"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about documents"
+              placeholder={hasSession ? "Ask about documents" : "Đăng nhập để hỏi AI Support"}
               maxLength={4000}
-              disabled={isSending}
+              disabled={!hasSession || isSending}
               autoComplete="off"
               autoCorrect="off"
               spellCheck="false"
             />
-            <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
+            <button type="submit" disabled={!hasSession || isSending || !input.trim()}>Gửi</button>
           </form>
         </section>
       </main>

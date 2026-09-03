@@ -60,8 +60,9 @@ test("repository updates conversation titles scoped to a user", async () => {
 test("repository maps vector matches into source objects", async () => {
   const repository = createSupportRepository({
     rpc(name, args) {
-      assert.equal(name, "match_support_chunks");
+      assert.equal(name, "match_support_chunks_for_user");
       assert.equal(args.match_count, 5);
+      assert.equal(args.match_owner_id, "user-1");
       return Promise.resolve({
         data: [{
           chunk_id: "chunk-1",
@@ -75,7 +76,7 @@ test("repository maps vector matches into source objects", async () => {
     },
   });
 
-  const chunks = await repository.matchChunks([0.1, 0.2], 0.75, 5);
+  const chunks = await repository.matchChunks("user-1", [0.1, 0.2], 0.75, 5);
 
   assert.deepEqual(chunks, [{
     chunkId: "chunk-1",
@@ -93,10 +94,11 @@ test("repository treats successful null vector data as no matches", async () => 
     },
   });
 
-  assert.deepEqual(await repository.matchChunks([0.1, 0.2]), []);
+  assert.deepEqual(await repository.matchChunks("user-1", [0.1, 0.2]), []);
 });
 
-test("repository reports whether at least one ready document exists", async () => {
+test("repository reports whether the current user has at least one ready document", async () => {
+  const calls = [];
   const repository = createSupportRepository({
     from(table) {
       assert.equal(table, "support_documents");
@@ -106,7 +108,7 @@ test("repository reports whether at least one ready document exists", async () =
           return this;
         },
         eq(column, value) {
-          assert.deepEqual([column, value], ["status", "ready"]);
+          calls.push(["eq", column, value]);
           return this;
         },
         limit(count) {
@@ -117,7 +119,41 @@ test("repository reports whether at least one ready document exists", async () =
     },
   });
 
-  assert.equal(await repository.hasReadyDocuments(), true);
+  assert.equal(await repository.hasReadyDocuments("user-1"), true);
+  assert.deepEqual(calls, [
+    ["eq", "status", "ready"],
+    ["eq", "owner_id", "user-1"],
+  ]);
+});
+
+test("repository lists documents scoped to the current user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        order(column, options) {
+          calls.push(["order", column, options]);
+          return Promise.resolve({ data: [], error: null });
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(await repository.listDocuments("user-1"), []);
+  assert.deepEqual(calls, [
+    ["select", "*"],
+    ["eq", "owner_id", "user-1"],
+    ["order", "created_at", { ascending: false }],
+  ]);
 });
 
 test("repository deletes documents scoped to a nullable owner", async () => {
@@ -166,6 +202,7 @@ test("repository reports a missing RAG migration with a setup error", async () =
       assert.equal(table, "support_documents");
       return {
         select() { return this; },
+        eq() { return this; },
         order() {
           return Promise.resolve({
             data: null,
@@ -177,11 +214,11 @@ test("repository reports a missing RAG migration with a setup error", async () =
   });
 
   await assert.rejects(
-    () => repository.listDocuments(),
+    () => repository.listDocuments("user-1"),
     (error) => (
       error.statusCode === 500
         && error.expose === true
-        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql."
+        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql."
     ),
   );
 });
@@ -192,6 +229,7 @@ test("repository reports Supabase permission errors as service role setup errors
       assert.equal(table, "support_documents");
       return {
         select() { return this; },
+        eq() { return this; },
         order() {
           return Promise.resolve({
             data: null,
@@ -203,7 +241,7 @@ test("repository reports Supabase permission errors as service role setup errors
   });
 
   await assert.rejects(
-    () => repository.listDocuments(),
+    () => repository.listDocuments("user-1"),
     (error) => (
       error.statusCode === 500
         && error.expose === true

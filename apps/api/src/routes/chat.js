@@ -86,12 +86,12 @@ export async function handleChatRequest({ user, body, repository, openAiClient }
   if (isShortGreeting(message)) {
     answer = createGreetingAnswer();
   } else {
-    const hasReadyDocuments = await repository.hasReadyDocuments();
+    const hasReadyDocuments = await repository.hasReadyDocuments(user.id);
     if (!hasReadyDocuments) {
       answer = createEmptyKnowledgeBaseAnswer();
     } else {
       const queryEmbedding = await openAiClient.createEmbedding(message, "QUESTION_ANSWERING");
-      chunks = await repository.matchChunks(queryEmbedding, RETRIEVAL_MATCH_THRESHOLD, RETRIEVAL_TOP_K);
+      chunks = await repository.matchChunks(user.id, queryEmbedding, RETRIEVAL_MATCH_THRESHOLD, RETRIEVAL_TOP_K);
       if (chunks.length === 0) {
         answer = createNoContextAnswer();
       } else {

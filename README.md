@@ -20,8 +20,8 @@ A React + Vite productivity app with a calculator, an authenticated Supabase Tod
 - Todo List tab gated by Supabase email/password authentication
 - User-owned todos enforced by Supabase Row Level Security
 - Todo create, complete, edit, and delete actions
-- Authenticated AI Support chat grounded in uploaded company documents
-- Admin document ingestion dashboard for `.txt` and `.md` files
+- Authenticated AI Support chat grounded in each user's uploaded documents
+- User-scoped document ingestion dashboard for `.txt` and `.md` files
 - Persisted conversation history with source metadata
 - Responsive desktop and mobile layout
 
@@ -62,14 +62,15 @@ calculator-app/
 1. Create a Supabase project.
 2. Enable email/password auth in Supabase Auth settings.
 3. Open SQL Editor.
-4. Run both migrations in order:
+4. Run all migrations in order:
 
 ```text
 supabase/migrations/0001_user_owned_todos.sql
 supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-`0001` creates or upgrades user-owned todos. `0002` adds AI Support storage, pgvector search, and the `profiles.role` upgrade. Existing databases that previously ran `0001` still receive the role column because the same idempotent `ALTER TABLE` is included in `0002`.
+`0001` creates or upgrades user-owned todos. `0002` adds AI Support storage, pgvector search, and the `profiles.role` upgrade. `0003` enforces per-user AI Support documents and conversations. Existing databases that previously ran `0001` still receive the role column because the same idempotent `ALTER TABLE` is included in `0002`.
 
 Only use the anon/publishable key in the frontend. Do not expose service role keys, database passwords, or JWT secrets.
 
@@ -84,7 +85,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
+The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. Signed-in users can upload, list, delete, and chat with their own `.txt` and `.md` documents. Each user's document library, vector retrieval, and conversation history are isolated from other users.
 
 The frontend calls same-origin `/api/*` routes for AI Support.
 
@@ -120,13 +121,14 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-Run the RAG migration in Supabase SQL Editor after `0001`:
+Run the RAG migrations in Supabase SQL Editor after `0001`:
 
 ```text
 supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-The demo support API stores chat and document records without an auth user. Todo List auth is unchanged.
+The support API verifies the Supabase bearer token for chat, conversation, and document routes. Document management and RAG retrieval are scoped to the authenticated user id. Todo List auth is unchanged.
 
 ## Run Locally
 
@@ -195,7 +197,7 @@ Add environment variables:
 
 Do not send API keys through chat or commit them to Git. Add backend keys only in Vercel environment variables or local shell exports.
 
-Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
+Do not set `VITE_SUPPORT_API_URL` on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 
 ## Tracking
 
@@ -203,5 +205,6 @@ Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/a
 - Review: Pull Requests
 - CI: `.github/workflows/ci.yml`
 - Project status: `docs/PROJECT_STATUS.md`
+- AI Support rules: `docs/AI_SUPPORT_RULES.md`
 - UI/design source: `DESIGN.md`
 - Wiki source: `docs/wiki/Home.md`

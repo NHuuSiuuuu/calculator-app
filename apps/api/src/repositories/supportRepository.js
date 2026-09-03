@@ -5,12 +5,14 @@ function createSetupError(message) {
   return setupError;
 }
 
+const MIGRATION_SETUP_MESSAGE = "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql.";
+
 function raiseIfError(error) {
   if (error) {
     const message = error.message ?? "Supabase request failed";
     if (/relation "support_(documents|document_chunks|conversations|messages)" does not exist/i.test(message)
       || /match_support_chunks/i.test(message)) {
-      throw createSetupError("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+      throw createSetupError(MIGRATION_SETUP_MESSAGE);
     }
     if (/permission denied|row-level security|invalid api key|invalid jwt|jwt/i.test(message)) {
       throw createSetupError("Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel.");
@@ -74,19 +76,21 @@ export function createSupportRepository(supabase) {
       return data;
     },
 
-    async listDocuments() {
+    async listDocuments(ownerId) {
       const { data, error } = await supabase.from("support_documents")
         .select("*")
+        .eq("owner_id", ownerId)
         .order("created_at", { ascending: false });
       raiseIfError(error);
       return data;
     },
 
-    async matchChunks(embedding, threshold = 0.74, count = 5) {
-      const { data, error } = await supabase.rpc("match_support_chunks", {
+    async matchChunks(ownerId, embedding, threshold = 0.74, count = 5) {
+      const { data, error } = await supabase.rpc("match_support_chunks_for_user", {
         query_embedding: embedding,
         match_threshold: threshold,
         match_count: count,
+        match_owner_id: ownerId,
       });
       raiseIfError(error);
       return (data ?? []).map((row) => ({
@@ -98,10 +102,11 @@ export function createSupportRepository(supabase) {
       }));
     },
 
-    async hasReadyDocuments() {
+    async hasReadyDocuments(ownerId) {
       const { data, error } = await supabase.from("support_documents")
         .select("id")
         .eq("status", "ready")
+        .eq("owner_id", ownerId)
         .limit(1);
       raiseIfError(error);
       return (data ?? []).length > 0;

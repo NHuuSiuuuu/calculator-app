@@ -44,7 +44,7 @@ test("AI Support exposes theme controls and disables message input history", () 
   assert.match(component, /useState\(readStoredSupportTheme\)/);
   assert.match(component, /setTheme\(\(current\) => \(current === "dark" \? "light" : "dark"\)\)/);
   assert.match(component, /className=\{`support-chat-shell is-\$\{theme\}`\}/);
-  assert.match(component, />AHV</);
+  assert.match(component, />Docs</);
   assert.match(component, /aria-label="Toggle support theme"/);
   assert.match(component, /className="support-conversation-title"/);
   assert.match(component, /className="support-conversation-title-track"/);
