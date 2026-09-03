@@ -203,5 +203,6 @@ Do not set `VITE_SUPPORT_API_URL` on Vercel. The browser calls `/api/chat`, `/ap
 - Review: Pull Requests
 - CI: `.github/workflows/ci.yml`
 - Project status: `docs/PROJECT_STATUS.md`
+- AI Support rules: `docs/AI_SUPPORT_RULES.md`
 - UI/design source: `DESIGN.md`
 - Wiki source: `docs/wiki/Home.md`

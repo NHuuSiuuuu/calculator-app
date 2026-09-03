@@ -83,6 +83,35 @@ test("signed-out users see auth form instead of todos", async ({ page }) => {
   await expect(page.getByText("No tasks yet")).not.toBeVisible();
 });
 
+test("signed-out users do not trigger AI Support API calls before asking", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.supportRequests = [];
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+
+    window.fetch = async (url, options = {}) => {
+      window.supportRequests.push({ url: String(url), method: options.method ?? "GET" });
+      return { ok: false, status: 401, json: async () => ({ error: "Missing bearer token" }) };
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+
+  await expect(page.getByText("Đăng nhập để hỏi AI Support.")).toBeVisible();
+  await expect(page.getByLabel("Câu hỏi")).toBeDisabled();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportRequests)).toEqual([]);
+});
+
 test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {
   let conversationRequestCount = 0;
   await page.addInitScript(() => {
@@ -546,10 +575,15 @@ test("signed-in support users can only ask questions", async ({ page }) => {
 
 test("AI Support keeps document upload hidden when role loading fails", async ({ page }) => {
   await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+
     window.APP_SUPABASE_CLIENT = {
       auth: {
         async getSession() {
-          return { data: { session: null }, error: null };
+          return { data: { session }, error: null };
         },
         onAuthStateChange() {
           return { data: { subscription: { unsubscribe() {} } } };
@@ -557,11 +591,16 @@ test("AI Support keeps document upload hidden when role loading fails", async ({
       },
     };
 
-    window.fetch = async () => ({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "Request failed with 500" }),
-    });
+    window.fetch = async (url) => {
+      if (String(url).endsWith("/api/conversations")) {
+        return { ok: true, json: async () => ({ conversations: [] }) };
+      }
+      return {
+        ok: false,
+        status: 500,
+        json: async () => ({ error: "Request failed with 500" }),
+      };
+    };
   });
 
   await page.goto("/");

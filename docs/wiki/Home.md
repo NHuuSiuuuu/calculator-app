@@ -108,4 +108,5 @@ The root and web-root catch-all API functions serve AI Support routes on the sam
 - Code review: Pull Requests
 - CI: `.github/workflows/ci.yml`
 - Project status: `docs/PROJECT_STATUS.md`
+- AI Support rules: `docs/AI_SUPPORT_RULES.md`
 - UI identity: `DESIGN.md`

@@ -95,6 +95,7 @@ export function AiSupportPanel({ session, supportApi }) {
   const [theme, setTheme] = useState(readStoredSupportTheme);
   const [isScrollToBottomVisible, setIsScrollToBottomVisible] = useState(false);
   const messagesRef = useRef(null);
+  const hasSession = Boolean(session?.accessToken);
   const conversationRequestGuard = useRef(null);
   if (!conversationRequestGuard.current) {
     conversationRequestGuard.current = createLatestRequestGuard();
@@ -136,6 +137,18 @@ export function AiSupportPanel({ session, supportApi }) {
   useEffect(() => {
     let isCurrent = true;
     async function loadSupportData() {
+      if (!hasSession) {
+        conversationRequestGuard.current.begin();
+        setConversations([]);
+        setMessages([]);
+        setDocuments([]);
+        setIsAdmin(false);
+        setSelectedConversationId(null);
+        setError("");
+        setStatusMessage("");
+        return;
+      }
+
       try {
         const conversationsPayload = await api.listConversations();
         if (isCurrent) setConversations(responseItems(conversationsPayload, "conversations"));
@@ -161,7 +174,7 @@ export function AiSupportPanel({ session, supportApi }) {
     return () => {
       isCurrent = false;
     };
-  }, [api]);
+  }, [api, hasSession]);
 
   async function selectConversation(conversationId) {
     const request = conversationRequestGuard.current.begin();
@@ -216,7 +229,7 @@ export function AiSupportPanel({ session, supportApi }) {
   async function submitMessage(event) {
     event.preventDefault();
     const message = input.trim();
-    if (!message || isSending) return;
+    if (!hasSession || !message || isSending) return;
 
     setError("");
     setStatusMessage("Sending message...");
@@ -321,7 +334,7 @@ export function AiSupportPanel({ session, supportApi }) {
               >
                 {theme === "dark" ? "Light" : "Dark"}
               </button>
-              <span className="status-pill">{isSending ? "Working" : "Ready"}</span>
+              <span className="status-pill">{hasSession ? (isSending ? "Working" : "Ready") : "Sign in"}</span>
             </div>
           </div>
         </div>
@@ -427,7 +440,7 @@ export function AiSupportPanel({ session, supportApi }) {
           >
             {messages.length === 0 ? (
               <div className="support-empty-state">
-                <h1>Khi bạn sẵn sàng là chúng ta có thể bắt đầu.</h1>
+                <h1>{hasSession ? "Khi bạn sẵn sàng là chúng ta có thể bắt đầu." : "Đăng nhập để hỏi AI Support."}</h1>
               </div>
             ) : null}
             {messages.map((message) => (
@@ -461,14 +474,14 @@ export function AiSupportPanel({ session, supportApi }) {
               name="support-chat-message"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about documents"
+              placeholder={hasSession ? "Ask about documents" : "Đăng nhập để hỏi AI Support"}
               maxLength={4000}
-              disabled={isSending}
+              disabled={!hasSession || isSending}
               autoComplete="off"
               autoCorrect="off"
               spellCheck="false"
             />
-            <button type="submit" disabled={isSending || !input.trim()}>Gửi</button>
+            <button type="submit" disabled={!hasSession || isSending || !input.trim()}>Gửi</button>
           </form>
         </section>
       </main>
