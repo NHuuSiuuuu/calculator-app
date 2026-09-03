@@ -70,8 +70,11 @@ test("AI Support is the default app tab on first load", async ({ page }) => {
 
   await page.goto("/");
 
+  await expect(page.getByRole("tab")).toHaveText(["AI Support", "Calculator", "Todo List"]);
   await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("Đăng nhập để hỏi AI Support.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Đăng ký tài khoản" })).toBeVisible();
   await expect(page.locator("#panel-support")).toBeVisible();
 });
 

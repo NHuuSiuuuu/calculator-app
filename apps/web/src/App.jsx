@@ -62,6 +62,18 @@ export function App() {
       <div className="workspace">
         <nav className="app-tabs" role="tablist" aria-label="App views">
           <button
+            id="tab-support"
+            className={`app-tab${activeTab === "support" ? " is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "support"}
+            aria-controls="panel-support"
+            tabIndex={activeTab === "support" ? 0 : -1}
+            onClick={() => setActiveTab("support")}
+          >
+            AI Support
+          </button>
+          <button
             id="tab-calculator"
             className={`app-tab${activeTab === "calculator" ? " is-active" : ""}`}
             type="button"
@@ -84,18 +96,6 @@ export function App() {
             onClick={() => setActiveTab("todos")}
           >
             Todo List
-          </button>
-          <button
-            id="tab-support"
-            className={`app-tab${activeTab === "support" ? " is-active" : ""}`}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === "support"}
-            aria-controls="panel-support"
-            tabIndex={activeTab === "support" ? 0 : -1}
-            onClick={() => setActiveTab("support")}
-          >
-            AI Support
           </button>
         </nav>
         <div hidden={activeTab !== "calculator"}>
