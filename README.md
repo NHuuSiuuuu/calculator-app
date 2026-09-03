@@ -20,8 +20,8 @@ A React + Vite productivity app with a calculator, an authenticated Supabase Tod
 - Todo List tab gated by Supabase email/password authentication
 - User-owned todos enforced by Supabase Row Level Security
 - Todo create, complete, edit, and delete actions
-- Authenticated AI Support chat grounded in uploaded company documents
-- Admin document ingestion dashboard for `.txt` and `.md` files
+- Authenticated AI Support chat grounded in each user's uploaded documents
+- User-scoped document ingestion dashboard for `.txt` and `.md` files
 - Persisted conversation history with source metadata
 - Responsive desktop and mobile layout
 
@@ -62,14 +62,15 @@ calculator-app/
 1. Create a Supabase project.
 2. Enable email/password auth in Supabase Auth settings.
 3. Open SQL Editor.
-4. Run both migrations in order:
+4. Run all migrations in order:
 
 ```text
 supabase/migrations/0001_user_owned_todos.sql
 supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-`0001` creates or upgrades user-owned todos. `0002` adds AI Support storage, pgvector search, and the `profiles.role` upgrade. Existing databases that previously ran `0001` still receive the role column because the same idempotent `ALTER TABLE` is included in `0002`.
+`0001` creates or upgrades user-owned todos. `0002` adds AI Support storage, pgvector search, and the `profiles.role` upgrade. `0003` enforces per-user AI Support documents and conversations. Existing databases that previously ran `0001` still receive the role column because the same idempotent `ALTER TABLE` is included in `0002`.
 
 Only use the anon/publishable key in the frontend. Do not expose service role keys, database passwords, or JWT secrets.
 
@@ -84,7 +85,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. Signed-in users can chat with AI Support and view their own conversation history. Only users with `profiles.role = 'admin'` can upload, list, or delete `.txt` and `.md` company documents.
+The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. Signed-in users can upload, list, delete, and chat with their own `.txt` and `.md` documents. Each user's document library, vector retrieval, and conversation history are isolated from other users.
 
 The frontend calls same-origin `/api/*` routes for AI Support.
 
@@ -120,13 +121,14 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-Run the RAG migration in Supabase SQL Editor after `0001`:
+Run the RAG migrations in Supabase SQL Editor after `0001`:
 
 ```text
 supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-The support API verifies the Supabase bearer token for chat and conversation routes. Document management routes require the authenticated profile role to be `admin`. Todo List auth is unchanged.
+The support API verifies the Supabase bearer token for chat, conversation, and document routes. Document management and RAG retrieval are scoped to the authenticated user id. Todo List auth is unchanged.
 
 ## Run Locally
 

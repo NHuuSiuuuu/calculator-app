@@ -2,8 +2,8 @@
 
 ## Roles
 
-- `admin`: can chat, view conversation history, upload company documents, list company documents, and delete company documents.
-- `user`: can chat and view only their own conversation history.
+- signed-in user: can chat, view only their own conversation history, upload their own documents, list their own documents, and delete their own documents.
+- `admin`: currently follows the same per-user document rules for AI Support. Admin-only global document management is not part of this mode.
 - signed-out visitor: cannot call AI Support APIs and must sign in before asking questions.
 
 ## Backend Access Rules
@@ -13,28 +13,29 @@
 - `GET /api/conversations`: requires a valid Supabase bearer token and returns only the current user's conversations.
 - `GET /api/conversations/:id/messages`: requires a valid Supabase bearer token and returns only messages from the current user's conversation.
 - `DELETE /api/conversations/:id`: requires a valid Supabase bearer token and deletes only the current user's conversation.
-- `GET /api/documents`: requires `profiles.role = 'admin'`.
-- `POST /api/documents/upload`: requires `profiles.role = 'admin'`.
-- `DELETE /api/documents/:id`: requires `profiles.role = 'admin'`.
+- `GET /api/documents`: requires a valid Supabase bearer token and returns only the current user's documents.
+- `POST /api/documents/upload`: requires a valid Supabase bearer token and creates a document owned by the current user.
+- `DELETE /api/documents/:id`: requires a valid Supabase bearer token and deletes only the current user's document.
+- RAG retrieval only searches chunks from documents owned by the current user.
 
 ## Frontend Rules
 
 - Do not call AI Support API routes until a Supabase session exists.
-- Hide the document management section unless `/api/me` returns `role: "admin"`.
+- Show document management only after a Supabase session exists.
 - Keep the chat input disabled for signed-out visitors.
-- Never infer admin access from frontend state alone; the backend decides with `profiles.role`.
+- Never rely on frontend state for isolation; the backend must always scope document and conversation access by the authenticated user id.
 
-## Supabase Admin Setup
+## Supabase Setup
 
-New accounts default to `role = 'user'`. Promote an account to admin in Supabase SQL Editor:
+Run the migrations in order:
 
-```sql
-update public.profiles
-set role = 'admin'
-where id = '<user-id>';
+```text
+supabase/migrations/0001_user_owned_todos.sql
+supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-Use the Supabase Auth user id for `<user-id>`.
+`0003` removes earlier demo support rows without an owner and enforces per-user ownership for support documents and conversations.
 
 ## Security
 

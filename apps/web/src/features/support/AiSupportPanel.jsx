@@ -84,7 +84,6 @@ export function AiSupportPanel({ session, supportApi }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [documents, setDocuments] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -142,7 +141,6 @@ export function AiSupportPanel({ session, supportApi }) {
         setConversations([]);
         setMessages([]);
         setDocuments([]);
-        setIsAdmin(false);
         setSelectedConversationId(null);
         setError("");
         setStatusMessage("");
@@ -157,14 +155,8 @@ export function AiSupportPanel({ session, supportApi }) {
       }
 
       try {
-        const currentUserPayload = await api.getCurrentUser();
-        if (!isCurrent) return;
-        const nextIsAdmin = currentUserPayload?.user?.role === "admin";
-        setIsAdmin(nextIsAdmin);
-        if (nextIsAdmin) {
-          const documentsPayload = await api.listDocuments();
-          if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
-        }
+        const documentsPayload = await api.listDocuments();
+        if (isCurrent) setDocuments(responseItems(documentsPayload, "documents"));
       } catch (nextError) {
         if (isCurrent) setError(nextError.message);
       }
@@ -382,7 +374,7 @@ export function AiSupportPanel({ session, supportApi }) {
           </div>
         </div>
 
-        {isAdmin ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="Company documents">
+        {hasSession ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="Company documents">
           <div className="support-admin__header">
             <h2>Tài liệu công ty</h2>
             <label className="support-upload">

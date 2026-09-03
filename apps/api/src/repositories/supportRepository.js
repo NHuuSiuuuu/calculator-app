@@ -74,19 +74,21 @@ export function createSupportRepository(supabase) {
       return data;
     },
 
-    async listDocuments() {
+    async listDocuments(ownerId) {
       const { data, error } = await supabase.from("support_documents")
         .select("*")
+        .eq("owner_id", ownerId)
         .order("created_at", { ascending: false });
       raiseIfError(error);
       return data;
     },
 
-    async matchChunks(embedding, threshold = 0.74, count = 5) {
-      const { data, error } = await supabase.rpc("match_support_chunks", {
+    async matchChunks(ownerId, embedding, threshold = 0.74, count = 5) {
+      const { data, error } = await supabase.rpc("match_support_chunks_for_user", {
         query_embedding: embedding,
         match_threshold: threshold,
         match_count: count,
+        match_owner_id: ownerId,
       });
       raiseIfError(error);
       return (data ?? []).map((row) => ({
@@ -98,10 +100,11 @@ export function createSupportRepository(supabase) {
       }));
     },
 
-    async hasReadyDocuments() {
+    async hasReadyDocuments(ownerId) {
       const { data, error } = await supabase.from("support_documents")
         .select("id")
         .eq("status", "ready")
+        .eq("owner_id", ownerId)
         .limit(1);
       raiseIfError(error);
       return (data ?? []).length > 0;

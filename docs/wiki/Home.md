@@ -19,13 +19,13 @@ Browser
 └→ Node.js API in apps/api → Gemini and Supabase pgvector
 ```
 
-AI Support RAG uses a custom Node.js API backend. Supabase Auth protects support conversations, and `profiles.role` limits document management to admins.
+AI Support RAG uses a custom Node.js API backend. Supabase Auth protects support conversations and documents, with every document library scoped to the signed-in user.
 
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; final review fixes applied
-- Scope: authenticated user chat, admin-only `.txt/.md` document management, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
+- Scope: authenticated per-user chat, user-owned `.txt/.md` document management, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
 
 RAG means:
 
@@ -78,9 +78,10 @@ Run in order:
 ```text
 supabase/migrations/0001_user_owned_todos.sql
 supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-The migration works for a new project and for the earlier anonymous Todo demo. Anonymous rows without `user_id` are removed before RLS ownership is enforced.
+The migrations work for a new project and for earlier anonymous demos. Rows without an owner are removed before ownership is enforced.
 
 Configure:
 

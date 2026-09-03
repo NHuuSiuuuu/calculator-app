@@ -141,21 +141,21 @@ export function createApiServer({ authService, repository, openAiClient }) {
 
       const url = new URL(request.url, "http://localhost");
       if (request.method === "POST" && url.pathname === "/api/documents/upload") {
-        const user = await authService.requireAdmin(request);
+        const user = await authService.requireUser(request);
         const file = await parseMultipartFile(request);
         sendJson(response, 201, await handleDocumentUpload({ user, file, repository, openAiClient }));
         return;
       }
 
       if (request.method === "GET" && url.pathname === "/api/documents") {
-        await authService.requireAdmin(request);
-        sendJson(response, 200, { documents: await repository.listDocuments() });
+        const user = await authService.requireUser(request);
+        sendJson(response, 200, { documents: await repository.listDocuments(user.id) });
         return;
       }
 
       const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
       if (request.method === "DELETE" && documentMatch) {
-        const user = await authService.requireAdmin(request);
+        const user = await authService.requireUser(request);
         const deleted = await repository.deleteDocument(user.id, decodeURIComponent(documentMatch[1]));
         if (!deleted) {
           throw documentNotFound();

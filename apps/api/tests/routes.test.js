@@ -160,7 +160,7 @@ test("handleChatRequest keeps the answer when generated conversation title fails
   assert.equal(titleAttempts, 1);
 });
 
-test("handleChatRequest retrieves the top K chunks without a high similarity threshold", async () => {
+test("handleChatRequest retrieves the current user's top K chunks without a high similarity threshold", async () => {
   const retrievalCalls = [];
   const result = await handleChatRequest({
     user: { id: "user-1" },
@@ -170,11 +170,12 @@ test("handleChatRequest retrieves the top K chunks without a high similarity thr
         return { id: "conv-1" };
       },
       async insertMessage() {},
-      async hasReadyDocuments() {
+      async hasReadyDocuments(userId) {
+        assert.equal(userId, "user-1");
         return true;
       },
-      async matchChunks(embedding, threshold, count) {
-        retrievalCalls.push({ embedding, threshold, count });
+      async matchChunks(userId, embedding, threshold, count) {
+        retrievalCalls.push({ userId, embedding, threshold, count });
         return [{
           chunkId: "chunk-1",
           filename: "faq.md",
@@ -195,7 +196,7 @@ test("handleChatRequest retrieves the top K chunks without a high similarity thr
     },
   });
 
-  assert.deepEqual(retrievalCalls, [{ embedding: [0.21, 0.82, 0.53], threshold: -1, count: 5 }]);
+  assert.deepEqual(retrievalCalls, [{ userId: "user-1", embedding: [0.21, 0.82, 0.53], threshold: -1, count: 5 }]);
   assert.equal(result.answer, "Anh chọn lịch trống rồi thanh toán cọc để đặt sân.");
   assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "faq.md", similarity: 0.52 }]);
 });
@@ -468,13 +469,13 @@ test("handleDocumentUpload reports an empty document as a client error", async (
   assert.deepEqual(failures, [["doc-1", "Uploaded document is empty"]]);
 });
 
-test("HTTP document upload requires an admin user and parses one multipart file", async () => {
+test("HTTP document upload requires a signed-in user and parses one multipart file", async () => {
   const calls = [];
   await withApiServer({
     authService: {
-      async requireAdmin(request) {
-        assert.equal(request.headers.authorization, "Bearer admin-token");
-        return { id: "admin-1", email: "admin@example.com", role: "admin" };
+      async requireUser(request) {
+        assert.equal(request.headers.authorization, "Bearer user-token");
+        return { id: "user-1", email: "user@example.com", role: "user" };
       },
     },
     repository: {
@@ -499,7 +500,7 @@ test("HTTP document upload requires an admin user and parses one multipart file"
       method: "POST",
       headers: {
         "content-type": `multipart/form-data; boundary=${boundary}`,
-        authorization: "Bearer admin-token",
+        authorization: "Bearer user-token",
       },
       body: `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="handbook.md"\r\nContent-Type: text/markdown\r\n\r\nRefunds are allowed within 7 days.\r\n--${boundary}--\r\n`,
     });
@@ -509,18 +510,18 @@ test("HTTP document upload requires an admin user and parses one multipart file"
   });
 
   assert.deepEqual(calls[0], ["createDocument", {
-    ownerId: "admin-1",
+    ownerId: "user-1",
     filename: "handbook.md",
     contentType: "text/markdown",
   }]);
 });
 
-test("HTTP document upload rejects non-admin users", async () => {
+test("HTTP document upload rejects signed-out requests", async () => {
   await withApiServer({
     authService: {
-      async requireAdmin() {
-        const error = new Error("Admin role required");
-        error.statusCode = 403;
+      async requireUser() {
+        const error = new Error("Missing bearer token");
+        error.statusCode = 401;
         throw error;
       },
     },
@@ -536,51 +537,50 @@ test("HTTP document upload rejects non-admin users", async () => {
       method: "POST",
       headers: {
         "content-type": `multipart/form-data; boundary=${boundary}`,
-        authorization: "Bearer user-token",
       },
       body: `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="handbook.md"\r\nContent-Type: text/markdown\r\n\r\nRefunds are allowed within 7 days.\r\n--${boundary}--\r\n`,
     });
 
-    assert.equal(response.status, 403);
-    assert.deepEqual(await response.json(), { error: "Admin role required" });
+    assert.equal(response.status, 401);
+    assert.deepEqual(await response.json(), { error: "Missing bearer token" });
   });
 });
 
-test("HTTP document list requires an admin user", async () => {
-  let listed = false;
+test("HTTP document list returns only the signed-in user's documents", async () => {
+  const calls = [];
   await withApiServer({
     authService: {
-      async requireAdmin(request) {
-        assert.equal(request.headers.authorization, "Bearer admin-token");
-        return { id: "admin-1", email: "admin@example.com", role: "admin" };
+      async requireUser(request) {
+        assert.equal(request.headers.authorization, "Bearer user-token");
+        return { id: "user-1", email: "user@example.com", role: "user" };
       },
     },
     repository: {
-      async listDocuments() {
-        listed = true;
+      async listDocuments(userId) {
+        calls.push(["listDocuments", userId]);
         return [];
       },
     },
     openAiClient: {},
   }, async (origin) => {
     const response = await fetch(`${origin}/api/documents`, {
-      headers: { authorization: "Bearer admin-token" },
+      headers: { authorization: "Bearer user-token" },
     });
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { documents: [] });
   });
 
-  assert.equal(listed, true);
+  assert.deepEqual(calls, [["listDocuments", "user-1"]]);
 });
 
-test("HTTP document delete requires an admin user", async () => {
+test("HTTP document delete scopes removal to the signed-in user", async () => {
   const calls = [];
   await withApiServer({
     authService: {
-      async requireAdmin(request) {
-        assert.equal(request.headers.authorization, "Bearer admin-token");
-        return { id: "admin-1", email: "admin@example.com", role: "admin" };
+      async requireUser(request) {
+        assert.equal(request.headers.authorization, "Bearer user-token");
+        return { id: "user-1", email: "user@example.com", role: "user" };
       },
     },
     repository: {
@@ -593,21 +593,21 @@ test("HTTP document delete requires an admin user", async () => {
   }, async (origin) => {
     const response = await fetch(`${origin}/api/documents/doc-1`, {
       method: "DELETE",
-      headers: { authorization: "Bearer admin-token" },
+      headers: { authorization: "Bearer user-token" },
     });
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { deleted: true });
   });
 
-  assert.deepEqual(calls, [["deleteDocument", "admin-1", "doc-1"]]);
+  assert.deepEqual(calls, [["deleteDocument", "user-1", "doc-1"]]);
 });
 
-test("HTTP document delete returns not found for missing admin documents", async () => {
+test("HTTP document delete returns not found for missing user documents", async () => {
   await withApiServer({
     authService: {
-      async requireAdmin() {
-        return { id: "admin-1", email: "admin@example.com", role: "admin" };
+      async requireUser() {
+        return { id: "user-1", email: "user@example.com", role: "user" };
       },
     },
     repository: {
@@ -619,7 +619,7 @@ test("HTTP document delete returns not found for missing admin documents", async
   }, async (origin) => {
     const response = await fetch(`${origin}/api/documents/missing-doc`, {
       method: "DELETE",
-      headers: { authorization: "Bearer admin-token" },
+      headers: { authorization: "Bearer user-token" },
     });
 
     assert.equal(response.status, 404);
@@ -772,12 +772,13 @@ test("HTTP server hides unclassified internal error details", async () => {
 test("HTTP server exposes classified setup errors", async () => {
   await withApiServer({
     authService: {
-      async requireAdmin() {
-        return { id: "admin-1", email: "admin@example.com", role: "admin" };
+      async requireUser() {
+        return { id: "user-1", email: "user@example.com", role: "user" };
       },
     },
     repository: {
-      async listDocuments() {
+      async listDocuments(userId) {
+        assert.equal(userId, "user-1");
         const error = new Error("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
         error.statusCode = 500;
         error.expose = true;
@@ -786,7 +787,9 @@ test("HTTP server exposes classified setup errors", async () => {
     },
     openAiClient: {},
   }, async (origin) => {
-    const response = await fetch(`${origin}/api/documents`);
+    const response = await fetch(`${origin}/api/documents`, {
+      headers: { authorization: "Bearer user-token" },
+    });
 
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), {

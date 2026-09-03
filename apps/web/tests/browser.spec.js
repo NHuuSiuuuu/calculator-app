@@ -522,7 +522,7 @@ test("support shows an assistant loading bubble while waiting for an answer", as
   await expect(page.getByText("Delayed answer", { exact: true })).toBeVisible();
 });
 
-test("signed-in support users can only ask questions", async ({ page }) => {
+test("signed-in support users can manage their own documents and ask questions", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "support-token",
@@ -550,7 +550,7 @@ test("signed-in support users can only ask questions", async ({ page }) => {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
       if (String(url).endsWith("/api/documents")) {
-        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+        return { ok: true, json: async () => ({ documents: [] }) };
       }
       if (String(url).endsWith("/api/chat")) {
         return {
@@ -568,12 +568,12 @@ test("signed-in support users can only ask questions", async ({ page }) => {
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Demo answer")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
-  await expect(page.getByText("Upload .txt hoặc .md")).toHaveCount(0);
-  expect(await page.evaluate(() => window.supportRequests.some((request) => request.url.endsWith("/api/documents")))).toBe(false);
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  expect(await page.evaluate(() => window.supportRequests.some((request) => request.url.endsWith("/api/documents")))).toBe(true);
 });
 
-test("AI Support keeps document upload hidden when role loading fails", async ({ page }) => {
+test("signed-in support users can see document controls without role loading", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "support-token",
@@ -595,20 +595,19 @@ test("AI Support keeps document upload hidden when role loading fails", async ({
       if (String(url).endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
-      return {
-        ok: false,
-        status: 500,
-        json: async () => ({ error: "Request failed with 500" }),
-      };
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
     };
   });
 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  await expect(page.getByRole("alert")).toContainText("Request failed with 500");
-  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
-  await expect(page.getByText("Upload .txt hoặc .md")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 test("signed-in users can chat with AI Support without visible sources", async ({ page }) => {
@@ -639,7 +638,7 @@ test("signed-in users can chat with AI Support without visible sources", async (
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
       if (String(url).endsWith("/api/documents")) {
-        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+        return { ok: true, json: async () => ({ documents: [] }) };
       }
       if (String(url).endsWith("/api/chat")) {
         return {
@@ -664,8 +663,8 @@ test("signed-in users can chat with AI Support without visible sources", async (
   await expect(page.getByText("Nguồn:")).toHaveCount(0);
   await expect(page.getByText("policy.md")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
-  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBe(0);
+  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBeGreaterThan(0);
 });
 
 test("AI Support renders assistant markdown with bold text and separate bullet lines", async ({ page }) => {
@@ -717,7 +716,7 @@ test("AI Support renders assistant markdown with bold text and separate bullet l
   await expect(page.getByRole("listitem").filter({ hasText: "Quốc khánh: 02 ngày." })).toBeVisible();
 });
 
-test("admin support dashboard displays document ingestion metadata", async ({ page }) => {
+test("support document panel displays the signed-in user's ingestion metadata", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "admin-token",
@@ -736,9 +735,6 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
     };
 
     window.fetch = async (url) => {
-      if (String(url).endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
-      }
       if (String(url).endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
@@ -772,7 +768,7 @@ test("admin support dashboard displays document ingestion metadata", async ({ pa
   await expect(documents.getByText("Embedding failed", { exact: true })).toBeVisible();
 });
 
-test("admin support dashboard can delete an old company document", async ({ page }) => {
+test("signed-in support users can delete their own old company document", async ({ page }) => {
   await page.addInitScript(() => {
     const session = {
       access_token: "admin-token",
@@ -802,9 +798,6 @@ test("admin support dashboard can delete an old company document", async ({ page
     window.fetch = async (url, options = {}) => {
       const path = String(url);
       window.supportDocumentRequests.push({ url: path, method: options.method ?? "GET" });
-      if (path.endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: "admin-1", role: "admin" } }) };
-      }
       if (path.endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
@@ -872,6 +865,9 @@ test("support discards a stale conversation response after the account changes",
           }),
         };
       }
+      if (String(url).endsWith("/api/documents")) {
+        return { ok: true, json: async () => ({ documents: [] }) };
+      }
       if (String(url).includes("/api/conversations/conv-user-1/messages")) {
         return new Promise((resolve) => {
           window.resolveOldConversation = () => resolve({
@@ -882,7 +878,7 @@ test("support discards a stale conversation response after the account changes",
           });
         });
       }
-      return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
+      return { ok: false, status: 404, json: async () => ({ error: "Not found" }) };
     };
   });
 
