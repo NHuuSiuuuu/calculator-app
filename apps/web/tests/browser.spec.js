@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("calculator computes with pointer input", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
   for (const key of ["1", "2", "+", "3", "="]) {
     await page.locator(`[data-key="${key}"]`).click();
@@ -27,15 +28,11 @@ test("calculator supports keyboard input and division by zero errors", async ({ 
 
 test("calculator deletes one history entry at a time", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
-  await page.keyboard.press("1");
-  await page.keyboard.press("+");
-  await page.keyboard.press("2");
-  await page.keyboard.press("Enter");
-  await page.keyboard.press("4");
-  await page.keyboard.press("*");
-  await page.keyboard.press("5");
-  await page.keyboard.press("Enter");
+  for (const key of ["1", "+", "2", "=", "4", "*", "5", "="]) {
+    await page.locator(`[data-key="${key}"]`).click();
+  }
 
   await expect(page.locator("#history")).toContainText("1 + 2 = 3");
   await expect(page.locator("#history")).toContainText("4 * 5 = 20");
@@ -48,12 +45,34 @@ test("calculator deletes one history entry at a time", async ({ page }) => {
 
 test("calculator layout is visible without horizontal overflow", async ({ page }) => {
   await page.goto("/");
+  await page.getByRole("tab", { name: "Calculator" }).click();
 
   await expect(page.locator(".calculator")).toBeVisible();
   await expect(page.locator("[data-key='=']")).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(hasHorizontalOverflow).toBe(false);
+});
+
+test("AI Support is the default app tab on first load", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Đăng nhập để hỏi AI Support.")).toBeVisible();
+  await expect(page.locator("#panel-support")).toBeVisible();
 });
 
 test("signed-out users see auth form instead of todos", async ({ page }) => {

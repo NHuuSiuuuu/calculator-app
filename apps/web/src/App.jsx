@@ -9,7 +9,7 @@ import { createSupabaseClient } from "./lib/supabase/client.js";
 import { createTodoRepository } from "./lib/supabase/todos.js";
 
 export function App() {
-  const [activeTab, setActiveTab] = useState("calculator");
+  const [activeTab, setActiveTab] = useState("support");
   const [authMode, setAuthMode] = useState("signin");
   const [session, setSession] = useState(null);
   const supabase = useMemo(() => globalThis.APP_SUPABASE_CLIENT ?? createSupabaseClient(), []);
