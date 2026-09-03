@@ -614,7 +614,7 @@ test("signed-in support users can manage their own documents and ask questions",
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Demo answer")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
   expect(await page.evaluate(() => window.supportRequests.some((request) => request.url.endsWith("/api/documents")))).toBe(true);
 });
@@ -651,7 +651,7 @@ test("signed-in support users can see document controls without role loading", a
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
   await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
@@ -709,7 +709,7 @@ test("signed-in users can chat with AI Support without visible sources", async (
   await expect(page.getByText("Nguồn:")).toHaveCount(0);
   await expect(page.getByText("policy.md")).toHaveCount(0);
   await expect(page.getByRole("alert")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "My documents" })).toBeVisible();
   expect(await page.evaluate(() => window.supportRequests.filter((url) => url.endsWith("/api/documents")).length)).toBeGreaterThan(0);
 });
 
@@ -806,7 +806,7 @@ test("support document panel displays the signed-in user's ingestion metadata", 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  const documents = page.getByRole("region", { name: "Company documents" });
+  const documents = page.getByRole("region", { name: "My documents" });
   await expect(documents.getByText("broken.md")).toBeVisible();
   await expect(documents.getByText("failed", { exact: true })).toBeVisible();
   await expect(documents.getByText("0 chunks", { exact: true })).toBeVisible();
@@ -862,7 +862,7 @@ test("signed-in support users can delete their own old company document", async 
   await page.goto("/");
   await page.getByRole("tab", { name: "AI Support" }).click();
 
-  const documents = page.getByRole("region", { name: "Company documents" });
+  const documents = page.getByRole("region", { name: "My documents" });
   await expect(documents.getByText("old-policy.md")).toBeVisible();
   await documents.getByRole("button", { name: "Xóa tài liệu old-policy.md" }).click();
 

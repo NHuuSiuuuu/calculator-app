@@ -314,7 +314,7 @@ export function AiSupportPanel({ session, supportApi, onAuthRequested }) {
         <div className="support-sidebar-section">
           <div className="support-sidebar-header">
             <div>
-              <p className="eyebrow">AHV</p>
+              <p className="eyebrow">Docs</p>
               <h1>AI Support</h1>
             </div>
             <div className="support-sidebar-actions">
@@ -374,9 +374,9 @@ export function AiSupportPanel({ session, supportApi, onAuthRequested }) {
           </div>
         </div>
 
-        {hasSession ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="Company documents">
+        {hasSession ? <section className="support-sidebar-section support-sidebar-section--documents" aria-label="My documents">
           <div className="support-admin__header">
-            <h2>Tài liệu công ty</h2>
+            <h2>Tài liệu của tôi</h2>
             <label className="support-upload">
               <span>Upload .txt hoặc .md</span>
               <input type="file" accept=".txt,.md,text/plain,text/markdown" onChange={uploadDocument} disabled={isUploading} />
@@ -414,7 +414,7 @@ export function AiSupportPanel({ session, supportApi, onAuthRequested }) {
         <section className="support-chat-panel" aria-label="Support chat">
           <header className="support-chat-header">
             <div>
-              <h2>Hỏi theo tài liệu công ty</h2>
+              <h2>Hỏi theo tài liệu của bạn</h2>
               <p>{selectedConversationId ? "Conversation context loaded" : "New conversation"}</p>
             </div>
           </header>

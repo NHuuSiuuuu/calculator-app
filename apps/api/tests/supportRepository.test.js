@@ -218,7 +218,7 @@ test("repository reports a missing RAG migration with a setup error", async () =
     (error) => (
       error.statusCode === 500
         && error.expose === true
-        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql."
+        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql."
     ),
   );
 });

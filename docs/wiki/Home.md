@@ -2,7 +2,7 @@
 
 ## Overview
 
-Calculator App is a React + Vite productivity app with a calculator, an authenticated Supabase Todo List, and AI Support grounded in company documents.
+Calculator App is a React + Vite productivity app with a calculator, an authenticated Supabase Todo List, and AI Support grounded in each user's uploaded documents.
 
 Repository:
 

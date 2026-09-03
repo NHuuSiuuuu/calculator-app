@@ -201,7 +201,7 @@ test("handleChatRequest retrieves the current user's top K chunks without a high
   assert.deepEqual(result.sources, [{ chunkId: "chunk-1", filename: "faq.md", similarity: 0.52 }]);
 });
 
-test("handleChatRequest answers short greetings as the company AI assistant without retrieval", async () => {
+test("handleChatRequest answers short greetings as a document assistant without retrieval", async () => {
   const messages = [];
   const result = await handleChatRequest({
     user: { id: "user-1" },
@@ -231,7 +231,7 @@ test("handleChatRequest answers short greetings as the company AI assistant with
     },
   });
 
-  assert.equal(result.answer, "Xin chào! Tôi là chatbot của công ty AHV Holding. Bạn cần tôi hỗ trợ thông tin, quy định, quy trình, chính sách hoặc tài liệu nào?");
+  assert.equal(result.answer, "Xin chào! Bạn có thể tải tài liệu lên rồi hỏi tôi tóm tắt hoặc tra cứu nội dung trong tài liệu đó.");
   assert.deepEqual(result.sources, []);
   assert.equal(messages[0].role, "user");
   assert.equal(messages[1].role, "assistant");
@@ -779,7 +779,7 @@ test("HTTP server exposes classified setup errors", async () => {
     repository: {
       async listDocuments(userId) {
         assert.equal(userId, "user-1");
-        const error = new Error("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.");
+        const error = new Error("Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql.");
         error.statusCode = 500;
         error.expose = true;
         throw error;
@@ -793,7 +793,7 @@ test("HTTP server exposes classified setup errors", async () => {
 
     assert.equal(response.status, 500);
     assert.deepEqual(await response.json(), {
-      error: "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql.",
+      error: "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql.",
     });
   });
 });
