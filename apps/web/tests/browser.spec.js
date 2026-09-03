@@ -152,9 +152,11 @@ test("signed-out support users can open the sign-in form", async ({ page }) => {
   await page.getByRole("tab", { name: "AI Support" }).click();
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
-  await expect(page.getByRole("tab", { name: "Todo List" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tab", { name: "Đăng nhập" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog", { name: "Đăng nhập" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("tab", { name: "Đăng nhập" })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
 });
 
 test("signed-out support users can open the sign-up form", async ({ page }) => {
@@ -175,9 +177,11 @@ test("signed-out support users can open the sign-up form", async ({ page }) => {
   await page.getByRole("tab", { name: "AI Support" }).click();
   await page.getByRole("button", { name: "Đăng ký tài khoản" }).click();
 
-  await expect(page.getByRole("tab", { name: "Todo List" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tab", { name: "Đăng ký" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("button", { name: "Đăng ký" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "AI Support" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog", { name: "Đăng ký tài khoản" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("tab", { name: "Đăng ký" })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("button", { name: "Đăng ký" })).toBeVisible();
 });
 
 test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {

@@ -11,6 +11,7 @@ import { createTodoRepository } from "./lib/supabase/todos.js";
 export function App() {
   const [activeTab, setActiveTab] = useState("support");
   const [authMode, setAuthMode] = useState("signin");
+  const [authDialogMode, setAuthDialogMode] = useState(null);
   const [session, setSession] = useState(null);
   const supabase = useMemo(() => globalThis.APP_SUPABASE_CLIENT ?? createSupabaseClient(), []);
   const authApi = useMemo(() => (supabase ? createAuthApi(supabase) : null), [supabase]);
@@ -54,8 +55,17 @@ export function App() {
 
   function openAuth(nextMode) {
     setAuthMode(nextMode);
-    setActiveTab("todos");
+    setAuthDialogMode(nextMode);
   }
+
+  function handleSessionChange(nextSession) {
+    setSession(nextSession);
+    if (nextSession) {
+      setAuthDialogMode(null);
+    }
+  }
+
+  const authDialogTitle = authDialogMode === "signup" ? "Đăng ký tài khoản" : "Đăng nhập";
 
   return (
     <main className="app-shell" aria-label="Productivity app">
@@ -118,7 +128,7 @@ export function App() {
           <AuthPanel
             authApi={authApi}
             session={session}
-            onSessionChange={setSession}
+            onSessionChange={handleSessionChange}
             initialMode={authMode}
           />
           <TodoPanel repository={todoRepository} session={session} />
@@ -137,6 +147,35 @@ export function App() {
           />
         </section>
       </div>
+      {authDialogMode ? (
+        <div className="auth-dialog-backdrop">
+          <section
+            className="auth-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-dialog-title"
+          >
+            <header className="auth-dialog__header">
+              <h2 id="auth-dialog-title">{authDialogTitle}</h2>
+              <button
+                type="button"
+                className="auth-dialog__close"
+                aria-label="Đóng form tài khoản"
+                onClick={() => setAuthDialogMode(null)}
+              >
+                x
+              </button>
+            </header>
+            <AuthPanel
+              authApi={authApi}
+              session={session}
+              onSessionChange={handleSessionChange}
+              initialMode={authDialogMode}
+              signedOutMessage="Đăng nhập hoặc đăng ký để dùng AI Support."
+            />
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

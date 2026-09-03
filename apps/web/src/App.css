@@ -75,6 +75,62 @@ input {
   outline-offset: 2px;
 }
 
+.auth-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  padding: 18px;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.58);
+  place-items: center;
+}
+
+.auth-dialog {
+  width: min(100%, 420px);
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.auth-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.auth-dialog__header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.auth-dialog__close {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.auth-dialog__close:hover {
+  background: var(--color-border);
+}
+
+.auth-dialog__close:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .app-panel {
   padding: 20px;
   border: 1px solid var(--color-border);

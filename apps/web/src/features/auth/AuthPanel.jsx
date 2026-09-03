@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-export function AuthPanel({ authApi, session, onSessionChange, initialMode = "signin" }) {
+export function AuthPanel({
+  authApi,
+  session,
+  onSessionChange,
+  initialMode = "signin",
+  signedOutMessage = "Đăng nhập để quản lý Todo.",
+}) {
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,7 +86,7 @@ export function AuthPanel({ authApi, session, onSessionChange, initialMode = "si
 
   return (
     <section className="auth-panel" aria-label="Sign in">
-      <p>Đăng nhập để quản lý Todo.</p>
+      <p>{signedOutMessage}</p>
       <div className="auth-mode-tabs" role="tablist" aria-label="Chọn chế độ tài khoản">
         <button
           type="button"
