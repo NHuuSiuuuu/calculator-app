@@ -493,12 +493,18 @@ test("support shows an assistant loading bubble while waiting for an answer", as
   await expect(page.getByText("Delayed answer", { exact: true })).toBeVisible();
 });
 
-test("signed-out users can use demo AI Support and see document upload", async ({ page }) => {
+test("signed-in support users can only ask questions", async ({ page }) => {
   await page.addInitScript(() => {
+    const session = {
+      access_token: "support-token",
+      user: { id: "user-1", email: "support@example.com" },
+    };
+    window.supportRequests = [];
+
     window.APP_SUPABASE_CLIENT = {
       auth: {
         async getSession() {
-          return { data: { session: null }, error: null };
+          return { data: { session }, error: null };
         },
         onAuthStateChange() {
           return { data: { subscription: { unsubscribe() {} } } };
@@ -506,15 +512,16 @@ test("signed-out users can use demo AI Support and see document upload", async (
       },
     };
 
-    window.fetch = async (url) => {
+    window.fetch = async (url, options = {}) => {
+      window.supportRequests.push({ url: String(url), method: options.method ?? "GET" });
       if (String(url).endsWith("/api/me")) {
-        return { ok: true, json: async () => ({ user: { id: null, role: "admin" } }) };
+        return { ok: true, json: async () => ({ user: { id: "user-1", role: "user" } }) };
       }
       if (String(url).endsWith("/api/conversations")) {
         return { ok: true, json: async () => ({ conversations: [] }) };
       }
       if (String(url).endsWith("/api/documents")) {
-        return { ok: true, json: async () => ({ documents: [] }) };
+        return { ok: false, status: 403, json: async () => ({ error: "Admin role required" }) };
       }
       if (String(url).endsWith("/api/chat")) {
         return {
@@ -532,11 +539,12 @@ test("signed-out users can use demo AI Support and see document upload", async (
   await page.getByRole("button", { name: "Gửi" }).click();
 
   await expect(page.getByText("Demo answer")).toBeVisible();
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
-  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
+  await expect(page.getByText("Upload .txt hoặc .md")).toHaveCount(0);
+  expect(await page.evaluate(() => window.supportRequests.some((request) => request.url.endsWith("/api/documents")))).toBe(false);
 });
 
-test("demo AI Support keeps document upload visible when the API is failing", async ({ page }) => {
+test("AI Support keeps document upload hidden when role loading fails", async ({ page }) => {
   await page.addInitScript(() => {
     window.APP_SUPABASE_CLIENT = {
       auth: {
@@ -560,8 +568,8 @@ test("demo AI Support keeps document upload visible when the API is failing", as
   await page.getByRole("tab", { name: "AI Support" }).click();
 
   await expect(page.getByRole("alert")).toContainText("Request failed with 500");
-  await expect(page.getByRole("region", { name: "Company documents" })).toBeVisible();
-  await expect(page.getByText("Upload .txt hoặc .md")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Company documents" })).toHaveCount(0);
+  await expect(page.getByText("Upload .txt hoặc .md")).toHaveCount(0);
 });
 
 test("signed-in users can chat with AI Support without visible sources", async ({ page }) => {

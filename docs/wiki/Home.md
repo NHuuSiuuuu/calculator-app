@@ -19,13 +19,13 @@ Browser
 └→ Node.js API in apps/api → Gemini and Supabase pgvector
 ```
 
-AI Support RAG uses a custom Node.js API backend. The current demo exposes AI Support without sign-in, while Supabase Auth and RLS still provide the user boundary for todos.
+AI Support RAG uses a custom Node.js API backend. Supabase Auth protects support conversations, and `profiles.role` limits document management to admins.
 
 ## AI Support RAG
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; final review fixes applied
-- Scope: demo chat without sign-in, `.txt/.md` uploads, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
+- Scope: authenticated user chat, admin-only `.txt/.md` document management, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
 
 RAG means:
 
@@ -100,7 +100,7 @@ Recommended settings:
 - Build Command: `npm run build`
 - Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-The root and web-root catch-all API functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel.
+The root and web-root catch-all API functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` on Vercel.
 
 ## Tracking
 

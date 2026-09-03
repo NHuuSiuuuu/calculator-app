@@ -4,7 +4,6 @@ import { handleChatRequest } from "./routes/chat.js";
 import { handleDocumentUpload } from "./routes/documents.js";
 
 const MAX_BODY_BYTES = 5 * 1024 * 1024;
-const DEMO_SUPPORT_USER = { id: null, email: null, role: "admin" };
 
 function corsHeaders() {
   return {
@@ -142,19 +141,22 @@ export function createApiServer({ authService, repository, openAiClient }) {
 
       const url = new URL(request.url, "http://localhost");
       if (request.method === "POST" && url.pathname === "/api/documents/upload") {
+        const user = await authService.requireAdmin(request);
         const file = await parseMultipartFile(request);
-        sendJson(response, 201, await handleDocumentUpload({ user: DEMO_SUPPORT_USER, file, repository, openAiClient }));
+        sendJson(response, 201, await handleDocumentUpload({ user, file, repository, openAiClient }));
         return;
       }
 
       if (request.method === "GET" && url.pathname === "/api/documents") {
+        await authService.requireAdmin(request);
         sendJson(response, 200, { documents: await repository.listDocuments() });
         return;
       }
 
       const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
       if (request.method === "DELETE" && documentMatch) {
-        const deleted = await repository.deleteDocument(DEMO_SUPPORT_USER.id, decodeURIComponent(documentMatch[1]));
+        const user = await authService.requireAdmin(request);
+        const deleted = await repository.deleteDocument(user.id, decodeURIComponent(documentMatch[1]));
         if (!deleted) {
           throw documentNotFound();
         }
@@ -163,34 +165,39 @@ export function createApiServer({ authService, repository, openAiClient }) {
       }
 
       if (request.method === "GET" && url.pathname === "/api/me") {
+        const user = await authService.requireUserWithRole(request);
         sendJson(response, 200, {
-          user: DEMO_SUPPORT_USER,
+          user,
         });
         return;
       }
 
       if (request.method === "POST" && url.pathname === "/api/chat") {
+        const user = await authService.requireUser(request);
         const body = await readJsonBody(request);
-        sendJson(response, 200, await handleChatRequest({ user: DEMO_SUPPORT_USER, body, repository, openAiClient }));
+        sendJson(response, 200, await handleChatRequest({ user, body, repository, openAiClient }));
         return;
       }
 
       if (request.method === "GET" && url.pathname === "/api/conversations") {
-        sendJson(response, 200, { conversations: await repository.listConversations(DEMO_SUPPORT_USER.id) });
+        const user = await authService.requireUser(request);
+        sendJson(response, 200, { conversations: await repository.listConversations(user.id) });
         return;
       }
 
       const messagesMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)\/messages$/);
       if (request.method === "GET" && messagesMatch) {
+        const user = await authService.requireUser(request);
         sendJson(response, 200, {
-          messages: await repository.getMessages(DEMO_SUPPORT_USER.id, decodeURIComponent(messagesMatch[1])),
+          messages: await repository.getMessages(user.id, decodeURIComponent(messagesMatch[1])),
         });
         return;
       }
 
       const conversationMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
       if (request.method === "DELETE" && conversationMatch) {
-        const deleted = await repository.deleteConversation(DEMO_SUPPORT_USER.id, decodeURIComponent(conversationMatch[1]));
+        const user = await authService.requireUser(request);
+        const deleted = await repository.deleteConversation(user.id, decodeURIComponent(conversationMatch[1]));
         if (!deleted) {
           throw conversationNotFound();
         }

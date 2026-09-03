@@ -84,7 +84,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-or-publishable-key
 
 ## AI Support RAG Setup
 
-The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. The current demo build does not require signing in to use AI Support; anyone who can open the app can chat and upload `.txt` or `.md` documents.
+The AI Support feature uses a backend API so Gemini and Supabase service-role secrets never reach the browser. Signed-in users can chat with AI Support and view their own conversation history. Only users with `profiles.role = 'admin'` can upload, list, or delete `.txt` and `.md` company documents.
 
 The frontend calls same-origin `/api/*` routes for AI Support.
 
@@ -126,7 +126,7 @@ Run the RAG migration in Supabase SQL Editor after `0001`:
 supabase/migrations/0002_ai_rag_support.sql
 ```
 
-The demo support API stores chat and document records without an auth user. Todo List auth is unchanged.
+The support API verifies the Supabase bearer token for chat and conversation routes. Document management routes require the authenticated profile role to be `admin`. Todo List auth is unchanged.
 
 ## Run Locally
 
@@ -195,7 +195,7 @@ Add environment variables:
 
 Do not send API keys through chat or commit them to Git. Add backend keys only in Vercel environment variables or local shell exports.
 
-Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
+Do not set `VITE_SUPPORT_API_URL` on Vercel. The browser calls `/api/chat`, `/api/documents`, and related routes on the same domain. Both root layouts include a catch-all API function.
 
 ## Tracking
 

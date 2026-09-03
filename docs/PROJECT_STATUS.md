@@ -14,7 +14,7 @@
 
 - Branch: `feature/ai-rag-support-system`
 - Status: implemented; Top K RAG retrieval applied
-- Scope: demo chat without sign-in, demo `.txt/.md` uploads, Gemini embeddings, Supabase pgvector Top K search, conversation history
+- Scope: authenticated user chat, admin-only `.txt/.md` document management, Gemini embeddings, Supabase pgvector Top K search, conversation history
 
 ## Implemented
 
@@ -25,10 +25,10 @@
 - Supabase migration with `user_id`, existing-table upgrade handling, and RLS scoped to `auth.uid()`
 - Auth-gated Todo UI
 - Desktop/mobile Playwright coverage for calculator and auth-gated todos
-- Demo AI Support chat with grounded Gemini answers without requiring sign-in
-- Public demo `.txt` and `.md` ingestion with pgvector embeddings and status metadata
+- Authenticated AI Support chat with grounded Gemini answers
+- Admin-only `.txt` and `.md` ingestion/deletion with pgvector embeddings and status metadata
 - Top K retrieval that passes related chunks into the prompt instead of dropping context with a high fixed similarity threshold
-- Demo conversation history with reconstructed source metadata and recency ordering
+- User-scoped conversation history with reconstructed source metadata and recency ordering
 
 ## Required Supabase Setup
 
@@ -66,7 +66,7 @@ Use Vercel with either supported layout:
 - Repository root: Build Command `npm run build`, Output Directory `apps/web/dist`
 - `apps/web` root: Build Command `npm run build`, Output Directory `dist`
 
-The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` for this demo on Vercel.
+The root `api/[...path].js` and web-root `apps/web/api/[...path].js` functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` on Vercel.
 
 ## Roadmap
 
