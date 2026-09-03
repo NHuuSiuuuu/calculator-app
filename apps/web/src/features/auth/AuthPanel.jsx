@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export function AuthPanel({ authApi, session, onSessionChange }) {
-  const [mode, setMode] = useState("signin");
+export function AuthPanel({ authApi, session, onSessionChange, initialMode = "signin" }) {
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -13,6 +13,12 @@ export function AuthPanel({ authApi, session, onSessionChange }) {
     setMessage("");
     setMessageTone("error");
   }
+
+  useEffect(() => {
+    if (!session) {
+      selectMode(initialMode);
+    }
+  }, [initialMode, session]);
 
   function validateCredentials(actionLabel) {
     if (!email.trim()) {

@@ -112,6 +112,52 @@ test("signed-out users do not trigger AI Support API calls before asking", async
   expect(await page.evaluate(() => window.supportRequests)).toEqual([]);
 });
 
+test("signed-out support users can open the sign-in form", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page.getByRole("tab", { name: "Todo List" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Đăng nhập" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: "Đăng nhập" })).toBeVisible();
+});
+
+test("signed-out support users can open the sign-up form", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.APP_SUPABASE_CLIENT = {
+      auth: {
+        async getSession() {
+          return { data: { session: null }, error: null };
+        },
+        onAuthStateChange() {
+          return { data: { subscription: { unsubscribe() {} } } };
+        },
+      },
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("tab", { name: "AI Support" }).click();
+  await page.getByRole("button", { name: "Đăng ký tài khoản" }).click();
+
+  await expect(page.getByRole("tab", { name: "Todo List" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Đăng ký" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: "Đăng ký" })).toBeVisible();
+});
+
 test("support keeps completed chat messages when conversation refresh fails", async ({ page }) => {
   let conversationRequestCount = 0;
   await page.addInitScript(() => {

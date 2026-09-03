@@ -79,7 +79,7 @@ function MessageContent({ content }) {
   return <div className="support-message-content">{blocks}</div>;
 }
 
-export function AiSupportPanel({ session, supportApi }) {
+export function AiSupportPanel({ session, supportApi, onAuthRequested }) {
   const [conversations, setConversations] = useState([]);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -433,6 +433,16 @@ export function AiSupportPanel({ session, supportApi }) {
             {messages.length === 0 ? (
               <div className="support-empty-state">
                 <h1>{hasSession ? "Khi bạn sẵn sàng là chúng ta có thể bắt đầu." : "Đăng nhập để hỏi AI Support."}</h1>
+                {!hasSession ? (
+                  <div className="support-auth-actions" aria-label="AI Support account actions">
+                    <button type="button" onClick={() => onAuthRequested?.("signin")}>
+                      Đăng nhập
+                    </button>
+                    <button type="button" onClick={() => onAuthRequested?.("signup")}>
+                      Đăng ký tài khoản
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {messages.map((message) => (

@@ -10,6 +10,7 @@ import { createTodoRepository } from "./lib/supabase/todos.js";
 
 export function App() {
   const [activeTab, setActiveTab] = useState("calculator");
+  const [authMode, setAuthMode] = useState("signin");
   const [session, setSession] = useState(null);
   const supabase = useMemo(() => globalThis.APP_SUPABASE_CLIENT ?? createSupabaseClient(), []);
   const authApi = useMemo(() => (supabase ? createAuthApi(supabase) : null), [supabase]);
@@ -50,6 +51,11 @@ export function App() {
       subscription?.data?.subscription?.unsubscribe?.();
     };
   }, [authApi, supabase]);
+
+  function openAuth(nextMode) {
+    setAuthMode(nextMode);
+    setActiveTab("todos");
+  }
 
   return (
     <main className="app-shell" aria-label="Productivity app">
@@ -109,7 +115,12 @@ export function App() {
             </div>
             <span className="status-pill">{session ? "Ready" : "Sign in"}</span>
           </header>
-          <AuthPanel authApi={authApi} session={session} onSessionChange={setSession} />
+          <AuthPanel
+            authApi={authApi}
+            session={session}
+            onSessionChange={setSession}
+            initialMode={authMode}
+          />
           <TodoPanel repository={todoRepository} session={session} />
         </section>
         <section
@@ -119,7 +130,11 @@ export function App() {
           aria-labelledby="tab-support"
           hidden={activeTab !== "support"}
         >
-          <AiSupportPanel key={session?.user.id ?? "signed-out"} session={session} />
+          <AiSupportPanel
+            key={session?.user.id ?? "signed-out"}
+            session={session}
+            onAuthRequested={openAuth}
+          />
         </section>
       </div>
     </main>
