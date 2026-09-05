@@ -2,7 +2,7 @@
 
 ## Overview
 
-Calculator App is a React + Vite productivity app with a calculator and an authenticated Supabase Todo List.
+Calculator App is a React + Vite productivity app with a calculator, an authenticated Supabase Todo List, and AI Support grounded in each user's uploaded documents.
 
 Repository:
 
@@ -15,17 +15,46 @@ https://github.com/NHuuSiuuuu/calculator-app
 ```text
 Browser
 → React app in apps/web
-→ Supabase Auth
-→ Supabase Postgres with RLS
+├→ Supabase Auth and Postgres with RLS
+└→ Node.js API in apps/api → Gemini and Supabase pgvector
 ```
 
-There is no custom Node.js server yet. Supabase Auth and RLS provide the user boundary for todos.
+AI Support RAG uses a custom Node.js API backend. Supabase Auth protects support conversations and documents, with every document library scoped to the signed-in user.
+
+## AI Support RAG
+
+- Branch: `feature/ai-rag-support-system`
+- Status: implemented; final review fixes applied
+- Scope: authenticated per-user chat, user-owned `.txt/.md` document management, Gemini embeddings, Supabase pgvector Top K retrieval, conversation history
+
+RAG means:
+
+```text
+Retrieval -> Augmented prompt -> Generation
+```
+
+AI Support uses this flow:
+
+```text
+Load Documents
+Chunking
+Embedding
+Store Vector DB
+Embed question
+Retriever gets Top K documents
+LLM creates the answer from Context + Question
+```
 
 ## Local Development
 
+Install with `npm ci`, then run the two services in separate terminals:
+
 ```bash
-npm ci
-npm run dev
+# Terminal 1: backend variables must be exported first
+npm run dev:api
+
+# Terminal 2: apps/web/.env.local contains the Vite variables
+npm run dev:web
 ```
 
 Open:
@@ -44,13 +73,15 @@ npm run build
 
 ## Supabase
 
-Run:
+Run in order:
 
 ```text
 supabase/migrations/0001_user_owned_todos.sql
+supabase/migrations/0002_ai_rag_support.sql
+supabase/migrations/0003_user_scoped_support_documents.sql
 ```
 
-The migration works for a new project and for the earlier anonymous Todo demo. Anonymous rows without `user_id` are removed before RLS ownership is enforced.
+The migrations work for a new project and for earlier anonymous demos. Rows without an owner are removed before ownership is enforced.
 
 Configure:
 
@@ -66,9 +97,11 @@ Never expose service role keys, database passwords, or JWT secrets in frontend c
 Recommended settings:
 
 - Framework Preset: `Vite`
-- Root Directory: `apps/web`
+- Root Directory: repository root with Output Directory `apps/web/dist`, or Root Directory `apps/web` with Output Directory `dist`
 - Build Command: `npm run build`
-- Output Directory: `dist`
+- Environment: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+The root and web-root catch-all API functions serve AI Support routes on the same domain. Do not set `VITE_SUPPORT_API_URL` on Vercel.
 
 ## Tracking
 
@@ -76,4 +109,5 @@ Recommended settings:
 - Code review: Pull Requests
 - CI: `.github/workflows/ci.yml`
 - Project status: `docs/PROJECT_STATUS.md`
+- AI Support rules: `docs/AI_SUPPORT_RULES.md`
 - UI identity: `DESIGN.md`

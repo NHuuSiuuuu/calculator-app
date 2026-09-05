@@ -4,12 +4,15 @@ import { AuthPanel } from "./features/auth/AuthPanel.jsx";
 import { createAuthApi } from "./features/auth/authState.js";
 import { Calculator } from "./features/calculator/Calculator.jsx";
 import { GamePanel } from "./features/game/GamePanel.jsx";
+import { AiSupportPanel } from "./features/support/AiSupportPanel.jsx";
 import { TodoPanel } from "./features/todos/TodoPanel.jsx";
 import { createSupabaseClient } from "./lib/supabase/client.js";
 import { createTodoRepository } from "./lib/supabase/todos.js";
 
 export function App() {
-  const [activeTab, setActiveTab] = useState("calculator");
+  const [activeTab, setActiveTab] = useState("support");
+  const [authMode, setAuthMode] = useState("signin");
+  const [authDialogMode, setAuthDialogMode] = useState(null);
   const [session, setSession] = useState(null);
   const supabase = useMemo(() => globalThis.APP_SUPABASE_CLIENT ?? createSupabaseClient(), []);
   const authApi = useMemo(() => (supabase ? createAuthApi(supabase) : null), [supabase]);
@@ -51,10 +54,36 @@ export function App() {
     };
   }, [authApi, supabase]);
 
+  function openAuth(nextMode) {
+    setAuthMode(nextMode);
+    setAuthDialogMode(nextMode);
+  }
+
+  function handleSessionChange(nextSession) {
+    setSession(nextSession);
+    if (nextSession) {
+      setAuthDialogMode(null);
+    }
+  }
+
+  const authDialogTitle = authDialogMode === "signup" ? "Đăng ký tài khoản" : "Đăng nhập";
+
   return (
     <main className="app-shell" aria-label="Productivity app">
       <div className="workspace">
         <nav className="app-tabs" role="tablist" aria-label="App views">
+          <button
+            id="tab-support"
+            className={`app-tab${activeTab === "support" ? " is-active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "support"}
+            aria-controls="panel-support"
+            tabIndex={activeTab === "support" ? 0 : -1}
+            onClick={() => setActiveTab("support")}
+          >
+            AI Support
+          </button>
           <button
             id="tab-calculator"
             className={`app-tab${activeTab === "calculator" ? " is-active" : ""}`}
@@ -109,8 +138,26 @@ export function App() {
             </div>
             <span className="status-pill">{session ? "Ready" : "Sign in"}</span>
           </header>
-          <AuthPanel authApi={authApi} session={session} onSessionChange={setSession} />
+          <AuthPanel
+            authApi={authApi}
+            session={session}
+            onSessionChange={handleSessionChange}
+            initialMode={authMode}
+          />
           <TodoPanel repository={todoRepository} session={session} />
+        </section>
+        <section
+          id="panel-support"
+          className={`support-panel app-panel${activeTab === "support" ? " is-active" : ""}`}
+          role="tabpanel"
+          aria-labelledby="tab-support"
+          hidden={activeTab !== "support"}
+        >
+          <AiSupportPanel
+            key={session?.user.id ?? "signed-out"}
+            session={session}
+            onAuthRequested={openAuth}
+          />
         </section>
         <div
           id="panel-game"
@@ -121,6 +168,35 @@ export function App() {
           <GamePanel />
         </div>
       </div>
+      {authDialogMode ? (
+        <div className="auth-dialog-backdrop">
+          <section
+            className="auth-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="auth-dialog-title"
+          >
+            <header className="auth-dialog__header">
+              <h2 id="auth-dialog-title">{authDialogTitle}</h2>
+              <button
+                type="button"
+                className="auth-dialog__close"
+                aria-label="Đóng form tài khoản"
+                onClick={() => setAuthDialogMode(null)}
+              >
+                x
+              </button>
+            </header>
+            <AuthPanel
+              authApi={authApi}
+              session={session}
+              onSessionChange={handleSessionChange}
+              initialMode={authDialogMode}
+              signedOutMessage="Đăng nhập hoặc đăng ký để dùng AI Support."
+            />
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

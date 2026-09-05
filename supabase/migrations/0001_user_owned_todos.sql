@@ -8,6 +8,10 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+alter table public.profiles
+add column if not exists role text not null default 'user'
+check (role in ('admin', 'user'));
+
 create table if not exists public.todos (
   id uuid primary key default gen_random_uuid(),
   title text not null check (char_length(btrim(title)) between 1 and 120),

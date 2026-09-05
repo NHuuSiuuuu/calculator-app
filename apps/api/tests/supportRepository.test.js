@@ -1,0 +1,516 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { createSupportRepository } from "../src/repositories/supportRepository.js";
+
+test("repository creates conversations scoped to a user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      return {
+        insert(row) {
+          calls.push(["insert", table, row]);
+          return {
+            select() { return this; },
+            single() {
+              return Promise.resolve({ data: { id: "conv-1", ...row }, error: null });
+            },
+          };
+        },
+      };
+    },
+  });
+
+  const conversation = await repository.createConversation("user-1", "Question title");
+
+  assert.equal(conversation.id, "conv-1");
+  assert.deepEqual(calls[0], ["insert", "support_conversations", { user_id: "user-1", title: "Question title" }]);
+});
+
+test("repository updates conversation titles scoped to a user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      return {
+        update(row) {
+          calls.push(["update", table, row]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return Promise.resolve({ error: null });
+        },
+      };
+    },
+  });
+
+  await repository.updateConversationTitle(null, "conv-1", "A very useful generated conversation title");
+
+  assert.deepEqual(calls, [
+    ["update", "support_conversations", { title: "A very useful generated conversation title" }],
+    ["eq", "id", "conv-1"],
+    ["is", "user_id", null],
+  ]);
+});
+
+test("repository maps vector matches into source objects", async () => {
+  const repository = createSupportRepository({
+    rpc(name, args) {
+      assert.equal(name, "match_support_chunks_for_user");
+      assert.equal(args.match_count, 5);
+      assert.equal(args.match_owner_id, "user-1");
+      return Promise.resolve({
+        data: [{
+          chunk_id: "chunk-1",
+          document_id: "doc-1",
+          content: "Return within 7 days.",
+          filename: "policy.md",
+          similarity: 0.9,
+        }],
+        error: null,
+      });
+    },
+  });
+
+  const chunks = await repository.matchChunks("user-1", [0.1, 0.2], 0.75, 5);
+
+  assert.deepEqual(chunks, [{
+    chunkId: "chunk-1",
+    documentId: "doc-1",
+    content: "Return within 7 days.",
+    filename: "policy.md",
+    similarity: 0.9,
+  }]);
+});
+
+test("repository treats successful null vector data as no matches", async () => {
+  const repository = createSupportRepository({
+    rpc() {
+      return Promise.resolve({ data: null, error: null });
+    },
+  });
+
+  assert.deepEqual(await repository.matchChunks("user-1", [0.1, 0.2]), []);
+});
+
+test("repository reports whether the current user has at least one ready document", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select(columns) {
+          assert.equal(columns, "id");
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        limit(count) {
+          assert.equal(count, 1);
+          return Promise.resolve({ data: [{ id: "doc-1" }], error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.hasReadyDocuments("user-1"), true);
+  assert.deepEqual(calls, [
+    ["eq", "status", "ready"],
+    ["eq", "owner_id", "user-1"],
+  ]);
+});
+
+test("repository lists documents scoped to the current user", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        order(column, options) {
+          calls.push(["order", column, options]);
+          return Promise.resolve({ data: [], error: null });
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(await repository.listDocuments("user-1"), []);
+  assert.deepEqual(calls, [
+    ["select", "*"],
+    ["eq", "owner_id", "user-1"],
+    ["order", "created_at", { ascending: false }],
+  ]);
+});
+
+test("repository deletes documents scoped to a nullable owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          calls.push(["maybeSingle"]);
+          return Promise.resolve({ data: { id: "doc-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteDocument(null, "doc-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "doc-1"],
+    ["is", "owner_id", null],
+    ["select", "id"],
+    ["maybeSingle"],
+  ]);
+});
+
+test("repository reports a missing RAG migration with a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        eq() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: 'relation "support_documents" does not exist' },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments("user-1"),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase RAG migration is missing. Run supabase/migrations/0002_ai_rag_support.sql, then supabase/migrations/0003_user_scoped_support_documents.sql."
+    ),
+  );
+});
+
+test("repository reports Supabase permission errors as service role setup errors", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_documents");
+      return {
+        select() { return this; },
+        eq() { return this; },
+        order() {
+          return Promise.resolve({
+            data: null,
+            error: { message: "permission denied for table support_documents" },
+          });
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.listDocuments("user-1"),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Supabase service role key is invalid or not configured. Check SUPABASE_SERVICE_ROLE_KEY in Vercel."
+    ),
+  );
+});
+
+test("repository reports embedding dimension mismatch as a setup error", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_document_chunks");
+      return {
+        insert() {
+          return {
+            select() {
+              return Promise.resolve({
+                data: null,
+                error: { message: "expected 1536 dimensions, not 3072" },
+              });
+            },
+          };
+        },
+      };
+    },
+  });
+
+  await assert.rejects(
+    () => repository.insertChunks("doc-1", [{
+      content: "Refund policy",
+      tokenEstimate: 2,
+      embedding: Array.from({ length: 3072 }, () => 0.01),
+    }]),
+    (error) => (
+      error.statusCode === 500
+        && error.expose === true
+        && error.message === "Embedding dimension mismatch. Gemini must return 1536-dimensional embeddings for the current Supabase schema."
+    ),
+  );
+});
+
+test("repository gets a conversation scoped by its owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  const conversation = await repository.getConversation("user-1", "conv-1");
+
+  assert.deepEqual(conversation, { id: "conv-1" });
+  assert.deepEqual(calls, [
+    ["select", "id"],
+    ["eq", "id", "conv-1"],
+    ["eq", "user_id", "user-1"],
+  ]);
+});
+
+test("repository scopes demo conversations with a null owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        is(column, value) {
+          calls.push(["is", column, value]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  const conversation = await repository.getConversation(null, "conv-1");
+
+  assert.deepEqual(conversation, { id: "conv-1" });
+  assert.deepEqual(calls, [
+    ["select", "id"],
+    ["eq", "id", "conv-1"],
+    ["is", "user_id", null],
+  ]);
+});
+
+test("repository deletes a conversation scoped by its owner", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() {
+          calls.push(["delete"]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return this;
+        },
+        select(columns) {
+          calls.push(["select", columns]);
+          return this;
+        },
+        maybeSingle() {
+          return Promise.resolve({ data: { id: "conv-1" }, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "conv-1"), true);
+  assert.deepEqual(calls, [
+    ["delete"],
+    ["eq", "id", "conv-1"],
+    ["eq", "user_id", "user-1"],
+    ["select", "id"],
+  ]);
+});
+
+test("repository reports false when deleting a missing or unowned conversation", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      assert.equal(table, "support_conversations");
+      return {
+        delete() { return this; },
+        eq() { return this; },
+        select() { return this; },
+        maybeSingle() {
+          return Promise.resolve({ data: null, error: null });
+        },
+      };
+    },
+  });
+
+  assert.equal(await repository.deleteConversation("user-1", "missing-conv"), false);
+});
+
+test("repository reconstructs persisted message sources from retrieved chunk IDs", async () => {
+  const repository = createSupportRepository({
+    from(table) {
+      if (table === "support_conversations") {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          maybeSingle() {
+            return Promise.resolve({ data: { id: "conv-1" }, error: null });
+          },
+        };
+      }
+
+      if (table === "support_messages") {
+        return {
+          select() { return this; },
+          eq() { return this; },
+          order() {
+            return Promise.resolve({
+              data: [{
+                id: "message-1",
+                role: "assistant",
+                content: "Refunds are available for seven days.",
+                retrieved_chunk_ids: ["chunk-1"],
+              }],
+              error: null,
+            });
+          },
+        };
+      }
+
+      assert.equal(table, "support_document_chunks");
+      return {
+        select() { return this; },
+        in(column, values) {
+          assert.equal(column, "id");
+          assert.deepEqual(values, ["chunk-1"]);
+          return Promise.resolve({
+            data: [{ id: "chunk-1", support_documents: { filename: "policy.md" } }],
+            error: null,
+          });
+        },
+      };
+    },
+  });
+
+  const messages = await repository.getMessages("user-1", "conv-1");
+
+  assert.deepEqual(messages[0].sources, [{ chunkId: "chunk-1", filename: "policy.md" }]);
+});
+
+test("repository returns no messages when the conversation is missing or not owned", async () => {
+  const tables = [];
+  const repository = createSupportRepository({
+    from(table) {
+      tables.push(table);
+      return {
+        select() { return this; },
+        eq() { return this; },
+        maybeSingle() {
+          return Promise.resolve({ data: null, error: null });
+        },
+      };
+    },
+  });
+
+  assert.deepEqual(await repository.getMessages("user-1", "missing-conversation"), []);
+  assert.deepEqual(tables, ["support_conversations"]);
+});
+
+test("repository touches a conversation after inserting a message", async () => {
+  const calls = [];
+  const repository = createSupportRepository({
+    from(table) {
+      if (table === "support_messages") {
+        return {
+          insert(row) {
+            calls.push(["insert", table, row]);
+            return {
+              select() { return this; },
+              single() {
+                return Promise.resolve({ data: { id: "message-1", ...row }, error: null });
+              },
+            };
+          },
+        };
+      }
+
+      assert.equal(table, "support_conversations");
+      return {
+        update(changes) {
+          calls.push(["update", table, changes]);
+          return this;
+        },
+        eq(column, value) {
+          calls.push(["eq", column, value]);
+          return Promise.resolve({ error: null });
+        },
+      };
+    },
+  });
+
+  await repository.insertMessage({
+    conversationId: "conv-1",
+    role: "user",
+    content: "What is the refund window?",
+  });
+
+  assert.equal(calls[1][0], "update");
+  assert.equal(calls[1][1], "support_conversations");
+  assert.equal(typeof calls[1][2].updated_at, "string");
+  assert.deepEqual(calls[2], ["eq", "id", "conv-1"]);
+});
